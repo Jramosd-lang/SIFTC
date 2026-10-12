@@ -1,0 +1,6 @@
+@SIFTC.API_HostAddress = http://localhost:5057
+
+GET {{SIFTC.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

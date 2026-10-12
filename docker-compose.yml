@@ -1,0 +1,27 @@
+services:
+  db:
+    image: postgres:15
+    container_name: siftc_database
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: tu_password_aqui # Pon tu clave real
+      POSTGRES_DB: siftc_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  api-csharp:
+    build:
+      context: .
+      dockerfile: dockerfile
+    container_name: siftc_api_csharp
+    ports:
+      - "7123:8080" 
+    depends_on:
+      - db
+    environment:
+      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=siftc_db;Username=postgres;Password=tu_password_aqui
+
+volumes:
+  postgres_data:

@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/Elementos de la solución/">
+    <File Path="docker-compose.yml" />
+    <File Path="dockerfile" />
+  </Folder>
+  <Folder Name="/Src/">
+    <Project Path="SIFTC.API/SIFTC.Api.csproj" />
+    <Project Path="SIFTC.Application/SIFTC.Application.csproj" />
+    <Project Path="SIFTC.Domain/SIFTC.Domain.csproj" />
+    <Project Path="SIFTC.Infrastructure/SIFTC.Infrastructure.csproj" />
+  </Folder>
+</Solution>
