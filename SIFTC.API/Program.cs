@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
+using SIFTC.Api.Common;
 using SIFTC.Application;
 using SIFTC.Infrastructure;
+using SIFTC.Infrastructure.Authentication;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -10,6 +12,27 @@ var builder = WebApplication.CreateBuilder(args);
 // 1. Conectar la base de datos y repositorios de Clean Architecture
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddProblemDetails(options =>
+{
+    options.CustomizeProblemDetails = context =>
+    {
+        context.ProblemDetails.Instance ??= context.HttpContext.Request.Path;
+    };
+});
+
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+builder.Services.AddCors(options => options.AddPolicy("Frontend", policy =>
+    policy.WithOrigins(allowedOrigins)
+        .AllowAnyHeader()
+        .AllowAnyMethod()));
+
+var jwtSettings = builder.Configuration.GetSection(JwtSettings.SectionName).Get<JwtSettings>()
+    ?? throw new InvalidOperationException("La configuración JWT es obligatoria.");
+
+if (string.IsNullOrWhiteSpace(jwtSettings.Secret) || string.IsNullOrWhiteSpace(jwtSettings.Issuer) || string.IsNullOrWhiteSpace(jwtSettings.Audience))
+{
+    throw new InvalidOperationException("JwtSettings debe configurarse mediante secretos o variables de entorno.");
+}
 
 // 2. Configuración de Seguridad: Autenticación JWT (Unificado)
 builder.Services.AddAuthentication(options =>
@@ -25,12 +48,12 @@ builder.Services.AddAuthentication(options =>
         ValidateAudience = true,
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
-        ValidIssuer = "SIFTC.Backend",
-        ValidAudience = "SIFTC.Clients",
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JwtSettings:Secret"]!))
+        ValidIssuer = jwtSettings.Issuer,
+        ValidAudience = jwtSettings.Audience,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Secret))
     };
 
-    // AQUÍ OBLIGAS AL JWT A USAR EL FORMATO RFC 7807 (Problem Details)
+    // Las respuestas de autenticación usan Problem Details conforme a RFC 9457.
     options.Events = new JwtBearerEvents
     {
         OnChallenge = async context =>
@@ -38,31 +61,11 @@ builder.Services.AddAuthentication(options =>
             // Le decimos a .NET que nosotros manejaremos la respuesta, que no envíe su 401 vacío
             context.HandleResponse();
 
-            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-            context.Response.ContentType = "application/problem+json";
-
-            var problem = new
-            {
-                type = "https://tools.ietf.org/html/rfc7235#section-3.1",
-                title = "No autorizado",
-                status = 401,
-                detail = "El token es inválido, ha expirado o no fue enviado en la cabecera."
-            };
-            await context.Response.WriteAsJsonAsync(problem);
+            await ProblemDetailsResponse.WriteAsync(context.HttpContext, StatusCodes.Status401Unauthorized, "auth.unauthorized", "No autorizado", "El token es inválido, ha expirado o no fue enviado en la cabecera.");
         },
         OnForbidden = async context =>
         {
-            context.Response.StatusCode = StatusCodes.Status403Forbidden;
-            context.Response.ContentType = "application/problem+json";
-
-            var problem = new
-            {
-                type = "https://tools.ietf.org/html/rfc7231#section-6.5.3",
-                title = "Acceso denegado (Forbidden)",
-                status = 403,
-                detail = "Tu rol no tiene los permisos necesarios para consumir este endpoint."
-            };
-            await context.Response.WriteAsJsonAsync(problem);
+            await ProblemDetailsResponse.WriteAsync(context.HttpContext, StatusCodes.Status403Forbidden, "auth.forbidden", "Acceso denegado", "Tu rol no tiene los permisos necesarios para consumir este endpoint.");
         }
     };
 });
@@ -80,6 +83,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseExceptionHandler();
+app.UseCors("Frontend");
 
 // 3. Middlewares de seguridad (El orden es obligatorio)
 app.UseAuthentication();

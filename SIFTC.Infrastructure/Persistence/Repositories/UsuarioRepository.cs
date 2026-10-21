@@ -11,6 +11,7 @@ public class UsuarioRepository(ApplicationDbContext dbContext)
     {
         // AsNoTracking() hace que la consulta sea más rápida ya que solo vamos a leer, no a modificar
         return await DbContext.Set<Usuario>()
+            .Include(u => u.Rol)
             .AsNoTracking()
             .FirstOrDefaultAsync(u => u.Email == email, cancellationToken);
     }

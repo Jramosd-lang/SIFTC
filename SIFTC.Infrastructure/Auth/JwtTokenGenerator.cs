@@ -28,8 +28,7 @@ public class JwtTokenGenerator : IJwtTokenGenerator
             new(JwtRegisteredClaimNames.Email, usuario.Email ?? string.Empty),
             new(JwtRegisteredClaimNames.Name, $"{usuario.PrimerNombre} {usuario.PrimerApellido}".Trim()),
 
-            // Convertir el enum directamente a string ("Administrador", "AnalistaFinanciero", etc.)
-            new(ClaimTypes.Role, usuario.Rol.ToString()),
+            new(ClaimTypes.Role, usuario.Rol.Nombre),
 
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };

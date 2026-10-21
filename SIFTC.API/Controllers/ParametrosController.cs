@@ -1,16 +1,13 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
+namespace SIFTC.Api.Controllers;
+
 [ApiController]
-[Route("api/[controller]")]
-public class ParametrosController : ControllerBase
+[Route("api/v1/[controller]")]
+public sealed class ParametrosController : BaseApiController
 {
-    // Este endpoint solo podrá ser tocado por alguien con rol "Analista" o "Administrador"
-    // Si alguien con rol "Consulta" (o sin token) intenta entrar, C# lanzará el error 403 automáticamente
-    [Authorize(Roles = "Analista, Administrador")]
+    [Authorize(Roles = "Analista financiero,Administrador")]
     [HttpPost("actualizar-umbral")]
-    public IActionResult ActualizarUmbral()
-    {
-        return Ok("Umbral actualizado");
-    }
+    public IActionResult ActualizarUmbral() => Ok("Umbral actualizado");
 }

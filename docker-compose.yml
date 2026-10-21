@@ -4,7 +4,7 @@ services:
     container_name: siftc_database
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: tu_password_aqui # Pon tu clave real
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD}
       POSTGRES_DB: siftc_db
     ports:
       - "5432:5432"
@@ -21,7 +21,11 @@ services:
     depends_on:
       - db
     environment:
-      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=siftc_db;Username=postgres;Password=tu_password_aqui
+      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=siftc_db;Username=postgres;Password=${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD}
+      - JwtSettings__Secret=${JWT_SECRET:?Define JWT_SECRET}
+      - JwtSettings__Issuer=${JWT_ISSUER:?Define JWT_ISSUER}
+      - JwtSettings__Audience=${JWT_AUDIENCE:?Define JWT_AUDIENCE}
+      - JwtSettings__ExpiryMinutes=${JWT_EXPIRY_MINUTES:-480}
 
 volumes:
   postgres_data:

@@ -1,6 +1,5 @@
 ﻿using MediatR;
 using SIFTC.Domain.Common;
-using SIFTC.Domain.Enums;
 
 namespace SIFTC.Application.UseCases.Usuarios.Commands; // <-- Namespace corregido
 
@@ -9,5 +8,5 @@ public record CrearUsuarioCommand(
     string Password,
     string PrimerNombre,
     string PrimerApellido,
-    Rol Rol
+    Guid IdRol
 ) : IRequest<Result<Guid>>;

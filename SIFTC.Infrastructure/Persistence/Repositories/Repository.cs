@@ -14,7 +14,7 @@ public abstract class Repository<T>(ApplicationDbContext dbContext) : IRepositor
 
     public async Task<IReadOnlyList<T>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        return await DbContext.Set<T>().ToListAsync(cancellationToken);
+        return await DbContext.Set<T>().AsNoTracking().ToListAsync(cancellationToken);
     }
 
     public async Task AddAsync(T entity, CancellationToken cancellationToken = default)
@@ -23,15 +23,15 @@ public abstract class Repository<T>(ApplicationDbContext dbContext) : IRepositor
         await DbContext.SaveChangesAsync(cancellationToken);
     }
 
-    public void Update(T entity)
+    public async Task UpdateAsync(T entity, CancellationToken cancellationToken = default)
     {
         DbContext.Set<T>().Update(entity);
-        DbContext.SaveChanges();
+        await DbContext.SaveChangesAsync(cancellationToken);
     }
 
-    public void Delete(T entity)
+    public async Task DeleteAsync(T entity, CancellationToken cancellationToken = default)
     {
         DbContext.Set<T>().Remove(entity);
-        DbContext.SaveChanges();
+        await DbContext.SaveChangesAsync(cancellationToken);
     }
 }

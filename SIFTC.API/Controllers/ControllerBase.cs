@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using SIFTC.Api.Common;
 using SIFTC.Domain.Common;
 
 namespace SIFTC.Api.Controllers;
@@ -14,23 +15,18 @@ public abstract class BaseApiController : ControllerBase
             throw new InvalidOperationException("No se puede procesar un resultado exitoso como fallo.");
         }
 
-        // Mapeamos el ErrorType al código HTTP, respetando el Criterio HU-BE-11
-        var statusCode = result.Error.Type switch
+        var (statusCode, title) = result.Error.Type switch
         {
-            ErrorType.Validation => StatusCodes.Status422UnprocessableEntity, // HTTP 422 (HU-BE-11)
-            ErrorType.NotFound => StatusCodes.Status404NotFound,              // HTTP 404
-            ErrorType.Unauthorized => StatusCodes.Status401Unauthorized,      // HTTP 401
-            ErrorType.Conflict => StatusCodes.Status409Conflict,              // HTTP 409
-            _ => StatusCodes.Status400BadRequest                              // HTTP 400 (Default)
+            ErrorType.Validation => (StatusCodes.Status422UnprocessableEntity, "Solicitud inválida"),
+            ErrorType.NotFound => (StatusCodes.Status404NotFound, "Recurso no encontrado"),
+            ErrorType.Unauthorized => (StatusCodes.Status401Unauthorized, "No autorizado"),
+            ErrorType.Conflict => (StatusCodes.Status409Conflict, "Conflicto"),
+            _ => (StatusCodes.Status400BadRequest, "Solicitud incorrecta")
         };
 
-        // El método Problem() genera automáticamente el estándar ProblemDetails.
-        // NOTA: .NET inyecta el "traceId" automáticamente en la respuesta, no necesitas capturarlo a mano.
-        return Problem(
-            statusCode: statusCode,
-            title: result.Error.Code,
-            detail: result.Error.Message
-        );
+        var problem = ProblemDetailsResponse.Create(HttpContext, statusCode, result.Error.Code, title, result.Error.Message);
+        problem.Extensions["code"] = result.Error.Code;
+        return new ObjectResult(problem) { StatusCode = statusCode, ContentTypes = { "application/problem+json" } };
     }
 
     // Para Queries y Commands que devuelven datos (Ej. Login)

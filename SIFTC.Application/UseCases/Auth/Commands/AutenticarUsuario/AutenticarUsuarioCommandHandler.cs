@@ -36,7 +36,7 @@ public class AutenticarUsuarioCommandHandler(
             usuario.IdUsuario,
             usuario.Email,
             $"{usuario.PrimerNombre} {usuario.PrimerApellido}".Trim(),
-            usuario.Rol.ToString(),
+            usuario.Rol.Nombre,
             token
         );
 

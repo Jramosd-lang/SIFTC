@@ -21,7 +21,13 @@ public static class DependencyInjection
         services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 
         // 3. Configuración de Autenticación
-        services.Configure<JwtSettings>(configuration.GetSection("JwtSettings"));
+        services.AddOptions<JwtSettings>()
+            .Bind(configuration.GetSection(JwtSettings.SectionName))
+            .Validate(settings => !string.IsNullOrWhiteSpace(settings.Secret), "JwtSettings:Secret es obligatorio.")
+            .Validate(settings => !string.IsNullOrWhiteSpace(settings.Issuer), "JwtSettings:Issuer es obligatorio.")
+            .Validate(settings => !string.IsNullOrWhiteSpace(settings.Audience), "JwtSettings:Audience es obligatorio.")
+            .Validate(settings => settings.ExpiryMinutes > 0, "JwtSettings:ExpiryMinutes debe ser mayor que cero.")
+            .ValidateOnStart();
         services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
 
