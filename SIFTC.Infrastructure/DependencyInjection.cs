@@ -19,6 +19,7 @@ public static class DependencyInjection
 
         // 2. Registro de Repositorios (Scoped = uno por cada petición HTTP)
         services.AddScoped<IUsuarioRepository, UsuarioRepository>();
+        services.AddScoped<IEntidadRepository, EntidadRepository>();
 
         // 3. Configuración de Autenticación
         services.AddOptions<JwtSettings>()

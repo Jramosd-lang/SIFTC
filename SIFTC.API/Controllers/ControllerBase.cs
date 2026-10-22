@@ -24,9 +24,7 @@ public abstract class BaseApiController : ControllerBase
             _ => (StatusCodes.Status400BadRequest, "Solicitud incorrecta")
         };
 
-        var problem = ProblemDetailsResponse.Create(HttpContext, statusCode, result.Error.Code, title, result.Error.Message);
-        problem.Extensions["code"] = result.Error.Code;
-        return new ObjectResult(problem) { StatusCode = statusCode, ContentTypes = { "application/problem+json" } };
+        return ProblemDetailsResponse.ToResult(HttpContext, statusCode, result.Error.Code, title, result.Error.Message);
     }
 
     // Para Queries y Commands que devuelven datos (Ej. Login)

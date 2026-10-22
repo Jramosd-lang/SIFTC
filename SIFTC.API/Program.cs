@@ -24,7 +24,8 @@ var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get
 builder.Services.AddCors(options => options.AddPolicy("Frontend", policy =>
     policy.WithOrigins(allowedOrigins)
         .AllowAnyHeader()
-        .AllowAnyMethod()));
+        .AllowAnyMethod()
+        .WithExposedHeaders(PaginacionHeaders.Total)));
 
 var jwtSettings = builder.Configuration.GetSection(JwtSettings.SectionName).Get<JwtSettings>()
     ?? throw new InvalidOperationException("La configuración JWT es obligatoria.");
@@ -70,7 +71,15 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-builder.Services.AddControllers();
+// Los errores de binding (ej. page=abc) usan el mismo formato Problem Details que el resto de la API.
+builder.Services.AddControllers().ConfigureApiBehaviorOptions(options =>
+{
+    options.InvalidModelStateResponseFactory = context =>
+    {
+        var campos = string.Join(", ", context.ModelState.Where(e => e.Value?.Errors.Count > 0).Select(e => e.Key));
+        return ProblemDetailsResponse.ToResult(context.HttpContext, StatusCodes.Status400BadRequest, "request.invalid", "Solicitud incorrecta", $"Parámetros inválidos: {campos}.");
+    };
+});
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
