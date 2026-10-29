@@ -9,7 +9,7 @@ public sealed record RankingResponseDto(
 public sealed record RankingItemDto(
     int Posicion,
     int CambioPosicion,
-    int EntidadId,
+    Guid EntidadId,
     string Entidad,
     string Sector,
     decimal Ic,
