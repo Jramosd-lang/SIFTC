@@ -10,7 +10,7 @@ public sealed class AuthController(IMediator mediator) : BaseApiController
 {
     [HttpPost("login")]
     [EndpointSummary("Inicia sesión y devuelve el token JWT")]
-    [EndpointDescription("Acepta 'usuario' o 'email' junto con 'password'. Devuelve token, expiraEn y los datos del usuario autenticado.")]
+    [EndpointDescription("Acepta 'usuario' y 'password'. Devuelve token, expiraEn y los datos del usuario autenticado.")]
     [ProducesResponseType<AuthResponseDto>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized, "application/problem+json")]
     public async Task<IActionResult> Login([FromBody] AutenticarUsuarioCommand command, CancellationToken cancellationToken)

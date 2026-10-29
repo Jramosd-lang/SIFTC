@@ -12,10 +12,11 @@ namespace SIFTC.Api.Controllers;
 [Route("api/v1")]
 public sealed class MatrizController(IMediator mediator) : BaseApiController
 {
+    [HttpPost("cargas")]
     [HttpPost("validar-matriz")]
     [Consumes("multipart/form-data")]
-    [EndpointSummary("Valida la matriz CSV en el microservicio Python")]
-    [EndpointDescription("Recibe el archivo en el campo multipart 'file' y lo reenvía a POST /v1/validar-matriz. Si el CSV tiene errores, devuelve 422 con la lista de errores en la extensión 'errores'.")]
+    [EndpointSummary("Carga y valida la matriz CSV")]
+    [EndpointDescription("Recibe el archivo en el campo multipart 'file' y lo reenvía a POST /v1/validar-matriz del microservicio Python. /cargas es la ruta principal; /validar-matriz se conserva como alias. Si el CSV tiene errores, devuelve 422 con la lista de errores en la extensión 'errores'.")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized, "application/problem+json")]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden, "application/problem+json")]

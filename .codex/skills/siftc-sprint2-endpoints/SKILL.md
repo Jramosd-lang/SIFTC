@@ -33,7 +33,7 @@ Use this skill for HU-BE-03: entities, metrics, OHLC series, ranking, and their 
 - `GET /api/v1/mercado/top`: optional `limite`, default 5; backend orders winners and losers.
 - `GET /api/v1/indice-general`: latest market IC and variation versus previous close.
 - `GET /api/v1/ranking`: sector, dimension, period, order and direction filters; include position movement if the analytic data supports it.
-- `GET /api/v1/entidades/{id}/ohlc`: validate range `1D|1S|1M|1A|MAX`; return oldest-to-newest and fill missing calculation days with the prior close when required by the contract.
+- `GET /api/v1/entidades/{id}/ohlc`: validate `periodo` against the `Frecuencia` enum (`Diaria`, `Mensual`, `Trimestral`); return oldest-to-newest and fill missing calculation days with the prior close when required by the contract.
 - `GET /api/v1/sectores`, `/dimensiones`, `/periodos`: stable catalogue DTOs for filters.
 
 ## Data-model rules

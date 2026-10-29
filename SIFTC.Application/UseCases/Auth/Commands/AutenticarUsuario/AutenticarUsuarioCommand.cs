@@ -5,7 +5,6 @@ using SIFTC.Domain.Common;
 namespace SIFTC.Application.UseCases.Auth.Commands.AutenticarUsuario;
 
 public sealed record AutenticarUsuarioCommand(
-    string? Usuario,
-    string? Email,
+    string Usuario,
     string Password
 ) : IRequest<Result<AuthResponseDto>>;

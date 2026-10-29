@@ -14,15 +14,14 @@ public class AutenticarUsuarioCommandHandler(
 {
     public async Task<Result<AuthResponseDto>> Handle(AutenticarUsuarioCommand request, CancellationToken cancellationToken)
     {
-        var identificador = request.Email ?? request.Usuario;
         var credencialesInvalidas = new Error("auth.unauthorized", "El usuario o la contraseña son incorrectos.", ErrorType.Unauthorized);
 
-        if (string.IsNullOrWhiteSpace(identificador))
+        if (string.IsNullOrWhiteSpace(request.Usuario))
         {
             return Result.Failure<AuthResponseDto>(credencialesInvalidas);
         }
 
-        var usuario = await usuarioRepository.GetByEmailAsync(identificador.Trim());
+        var usuario = await usuarioRepository.GetByEmailAsync(request.Usuario.Trim());
 
         if (usuario is null)
         {

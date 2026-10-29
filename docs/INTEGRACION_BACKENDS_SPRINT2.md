@@ -156,7 +156,8 @@ El backend .NET expone dos rutas propias y reenvía al microservicio:
 |---|---|---|
 | `/api/v1/ranking` | `/api/v1/ranking` | GET |
 | `/api/v1/rankings` | `/api/v1/ranking` | GET (alias) |
-| `/api/v1/validar-matriz` | `/v1/validar-matriz` | POST multipart, campo `file` |
+| `/api/v1/cargas` | `/v1/validar-matriz` | POST multipart, campo `file` |
+| `/api/v1/validar-matriz` | `/v1/validar-matriz` | POST multipart (alias) |
 
 Configuración:
 
@@ -167,7 +168,7 @@ PythonBackend__TimeoutSeconds=90
 
 `/ranking` valida localmente `sector`, `dimension`, `periodo`, `orden`, `dir`, `limit` (1..200) y `offset` (>=0). Si el microservicio no responde o devuelve un error, el puente responde `503 application/problem+json` sin filtrar detalles internos.
 
-`/validar-matriz` exige rol `Analista financiero` o `Administrador`. Si Python devuelve `422`, el puente conserva el mensaje y la lista de errores en la extensión `errores` de Problem Details:
+`/cargas` exige rol `Analista financiero` o `Administrador`; `/validar-matriz` se conserva como alias. Si Python devuelve `422`, el puente conserva el mensaje y la lista de errores en la extensión `errores` de Problem Details:
 
 ```json
 {
@@ -175,7 +176,7 @@ PythonBackend__TimeoutSeconds=90
   "title": "Matriz inválida",
   "status": 422,
   "detail": "El CSV contiene errores de validación",
-  "instance": "/api/v1/validar-matriz",
+  "instance": "/api/v1/cargas",
   "code": "matriz.invalid",
   "errores": [
     { "tipo": "columnas_faltantes", "columnas": ["codigo_entidad", "..."] }

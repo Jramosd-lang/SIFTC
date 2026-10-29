@@ -23,6 +23,7 @@ public static class DependencyInjection
         // 2. Registro de Repositorios (Scoped = uno por cada petición HTTP)
         services.AddScoped<IUsuarioRepository, UsuarioRepository>();
         services.AddScoped<IEntidadRepository, EntidadRepository>();
+        services.AddScoped<ICotizacionQueryRepository, CotizacionQueryRepository>();
         services.AddScoped<IMetricaRepository, MetricaRepository>();
         services.AddScoped<IMetricaQueryRepository, MetricaQueryRepository>();
 

@@ -5,6 +5,7 @@ using SIFTC.Api.Common;
 using SIFTC.Application.UseCases.Entidades;
 using SIFTC.Application.UseCases.Entidades.Queries.ListarEntidades;
 using SIFTC.Application.UseCases.Entidades.Queries.ObtenerEntidad;
+using SIFTC.Application.UseCases.Entidades.Queries.ObtenerOhlc;
 
 namespace SIFTC.Api.Controllers;
 
@@ -45,6 +46,22 @@ public sealed class EntidadesController(IMediator mediator) : BaseApiController
     public async Task<IActionResult> Obtener(Guid id, CancellationToken cancellationToken)
     {
         var result = await mediator.Send(new ObtenerEntidadQuery(id), cancellationToken);
+        return HandleResult(result);
+    }
+
+    [HttpGet("{id:guid}/ohlc")]
+    [EndpointSummary("Obtiene la serie OHLC de una entidad")]
+    [EndpointDescription("periodo usa la frecuencia del sistema: Diaria, Mensual o Trimestral. Devuelve la serie de la fecha más antigua a la más reciente.")]
+    [ProducesResponseType<OhlcResponseDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, "application/problem+json")]
+    public async Task<IActionResult> ObtenerOhlc(
+        Guid id,
+        [FromQuery] string? periodo,
+        CancellationToken cancellationToken)
+    {
+        var result = await mediator.Send(new ObtenerOhlcQuery(id, periodo), cancellationToken);
         return HandleResult(result);
     }
 }
