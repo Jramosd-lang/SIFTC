@@ -1,8 +1,9 @@
-﻿namespace SIFTC.Application.Common.Interfaces;
+﻿using SIFTC.Domain.Entities;
 
-using SIFTC.Domain.Entities;
+namespace SIFTC.Application.Common.Interfaces;
 
 public interface IJwtTokenGenerator
 {
+    int ExpirySeconds { get; }
     string GenerateToken(Usuario usuario);
 }

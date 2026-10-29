@@ -17,6 +17,8 @@ public class JwtTokenGenerator : IJwtTokenGenerator
         _jwtSettings = jwtOptions.Value;
     }
 
+    public int ExpirySeconds => _jwtSettings.ExpiryMinutes * 60;
+
     public string GenerateToken(Usuario usuario)
     {
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Secret));

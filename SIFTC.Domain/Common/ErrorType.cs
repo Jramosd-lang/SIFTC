@@ -6,5 +6,6 @@ public enum ErrorType
     NotFound,
     Conflict,
     Unauthorized,
+    Dependency,
     Failure
 }

@@ -1,6 +1,55 @@
 @SIFTC.API_HostAddress = http://localhost:5057
+@token = <pegar el token devuelto por /auth/login>
 
-GET {{SIFTC.API_HostAddress}}/weatherforecast/
+POST {{SIFTC.API_HostAddress}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "usuario": "",
+  "password": ""
+}
+
+###
+
+GET {{SIFTC.API_HostAddress}}/api/v1/entidades?sector=Energía&sort=ic&dir=desc&page=1&size=20
+Authorization: Bearer {{token}}
 Accept: application/json
+
+###
+
+GET {{SIFTC.API_HostAddress}}/api/v1/entidades/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{token}}
+Accept: application/json
+
+###
+
+GET {{SIFTC.API_HostAddress}}/api/v1/metricas?sector=Energía&periodo=mensual&fecha=2026-09-30&dimension=Rentabilidad&sort=codigoMetrica&dir=asc&page=1&size=20
+Authorization: Bearer {{token}}
+Accept: application/json
+
+###
+
+GET {{SIFTC.API_HostAddress}}/api/v1/ranking?sector=Energía&dimension=Rentabilidad&periodo=mensual&orden=ic&dir=desc&limit=50&offset=0
+Authorization: Bearer {{token}}
+Accept: application/json
+
+###
+
+GET {{SIFTC.API_HostAddress}}/api/v1/rankings?periodo=mensual&limit=10
+Authorization: Bearer {{token}}
+Accept: application/json
+
+###
+
+POST {{SIFTC.API_HostAddress}}/api/v1/validar-matriz
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=----SIFTCBoundary
+
+------SIFTCBoundary
+Content-Disposition: form-data; name="file"; filename="matriz.csv"
+Content-Type: text/csv
+
+< ./matriz.csv
+------SIFTCBoundary--
 
 ###

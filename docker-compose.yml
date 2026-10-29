@@ -26,6 +26,9 @@ services:
       - JwtSettings__Issuer=${JWT_ISSUER:?Define JWT_ISSUER}
       - JwtSettings__Audience=${JWT_AUDIENCE:?Define JWT_AUDIENCE}
       - JwtSettings__ExpiryMinutes=${JWT_EXPIRY_MINUTES:-480}
+      - PythonBackend__BaseUrl=${PYTHON_BACKEND_URL:-https://backendfastapi-b3mt.onrender.com/}
+      - PythonBackend__TimeoutSeconds=${PYTHON_BACKEND_TIMEOUT:-90}
+      - Cors__AllowAnyOrigin=${CORS_ALLOW_ANY_ORIGIN:-true}
 
 volumes:
   postgres_data:

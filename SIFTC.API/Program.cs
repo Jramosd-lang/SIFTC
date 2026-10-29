@@ -21,10 +21,22 @@ builder.Services.AddProblemDetails(options =>
 });
 
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+var allowAnyOrigin = builder.Configuration.GetValue<bool?>("Cors:AllowAnyOrigin") ?? true;
 builder.Services.AddCors(options => options.AddPolicy("Frontend", policy =>
-    policy.WithOrigins(allowedOrigins)
-        .AllowAnyHeader()
-        .AllowAnyMethod()));
+{
+    if (allowAnyOrigin)
+    {
+        policy.AllowAnyOrigin();
+    }
+    else
+    {
+        policy.WithOrigins(allowedOrigins);
+    }
+
+    policy.AllowAnyHeader()
+        .AllowAnyMethod()
+        .WithExposedHeaders(PaginacionHeaders.Total);
+}));
 
 var jwtSettings = builder.Configuration.GetSection(JwtSettings.SectionName).Get<JwtSettings>()
     ?? throw new InvalidOperationException("La configuración JWT es obligatoria.");
@@ -58,28 +70,56 @@ builder.Services.AddAuthentication(options =>
     {
         OnChallenge = async context =>
         {
-            // Le decimos a .NET que nosotros manejaremos la respuesta, que no envíe su 401 vacío
             context.HandleResponse();
 
-            await ProblemDetailsResponse.WriteAsync(context.HttpContext, StatusCodes.Status401Unauthorized, "auth.unauthorized", "No autorizado", "El token es inválido, ha expirado o no fue enviado en la cabecera.");
+            await ProblemDetailsResponse.WriteAsync(
+                context.HttpContext,
+                StatusCodes.Status401Unauthorized,
+                "auth.unauthorized",
+                "Unauthorized",
+                "Token inválido o vencido",
+                ProblemDetailsResponse.AboutBlank);
         },
         OnForbidden = async context =>
         {
-            await ProblemDetailsResponse.WriteAsync(context.HttpContext, StatusCodes.Status403Forbidden, "auth.forbidden", "Acceso denegado", "Tu rol no tiene los permisos necesarios para consumir este endpoint.");
+            await ProblemDetailsResponse.WriteAsync(
+                context.HttpContext,
+                StatusCodes.Status403Forbidden,
+                "auth.forbidden",
+                "Forbidden",
+                "No tiene permiso",
+                ProblemDetailsResponse.AboutBlank);
         }
     };
 });
 
-builder.Services.AddControllers();
+// Los errores de binding (ej. page=abc) usan el mismo formato Problem Details que el resto de la API.
+builder.Services.AddControllers().ConfigureApiBehaviorOptions(options =>
+{
+    options.InvalidModelStateResponseFactory = context =>
+    {
+        var campos = string.Join(", ", context.ModelState.Where(e => e.Value?.Errors.Count > 0).Select(e => e.Key));
+        return ProblemDetailsResponse.ToResult(
+            context.HttpContext,
+            StatusCodes.Status400BadRequest,
+            "request.invalid",
+            "Solicitud incorrecta",
+            $"Parámetros inválidos: {campos}.");
+    };
+});
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+var documentationEnabled = builder.Configuration.GetValue<bool?>("Documentation:Enabled") ?? true;
+if (documentationEnabled)
 {
     app.MapOpenApi();
-    app.MapScalarApiReference();
+    app.MapScalarApiReference("/docs", options =>
+    {
+        options.WithTitle("SIFTC API");
+        options.WithOpenApiRoutePattern("/openapi/{documentName}.json");
+    });
 }
 
 app.UseHttpsRedirection();

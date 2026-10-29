@@ -21,6 +21,7 @@ Use this skill for HU-BE-03: entities, metrics, OHLC series, ranking, and their 
 - Controllers delegate to MediatR commands/queries. Keep use-case logic in `SIFTC.Application`, entities/value invariants in `SIFTC.Domain`, and EF/Npgsql access in `SIFTC.Infrastructure`.
 - Apply CQRS: a command mutates state and a query only reads it; each is an `IRequest<Result<T>>` with its own MediatR handler. Never put business or EF logic in a controller.
 - Use the Result pattern for expected failures and map its error type/code at the API boundary. Construct aggregates through their factory method so validation and identifier generation stay in the domain.
+- Keep one domain entity per database table in `SIFTC.Domain/Entities`; do not create a combined model file. Each entity exposes a private EF constructor and a `Create(...)` factory returning `Result<T>`, following `Usuario.Create` and the project's `Error`/`ErrorType` conventions.
 - Use asynchronous calls and `CancellationToken` end-to-end. Read queries use `AsNoTracking()` and project directly to DTOs.
 - Never expose EF entities directly from controllers; return endpoint DTOs matching the contract examples.
 - Validate query inputs at the API/application boundary. Listings consistently support `page`, `size`, and `sort`; ranking/metrics support sector and period filters. Whitelist sort fields and cap `size`.
@@ -38,6 +39,7 @@ Use this skill for HU-BE-03: entities, metrics, OHLC series, ranking, and their 
 ## Data-model rules
 
 - Keep schema/table names and precision aligned to the SQL scripts. `seguridad.usuarios` references `seguridad.roles`; analytic facts reference the clean/crude identifiers for traceability.
+- Persist the `Frecuencia` domain enum as text through Fluent API (`HasConversion<string>()`). A new enum value also requires a matching database migration for the `analitica.dim_metrica.frecuencia` `CHECK` constraint.
 - Use `DateOnly` for PostgreSQL `DATE` and `DateTimeOffset` for `TIMESTAMPTZ`.
 - The .NET API backend DB role is read-only in `analitica`, except explicitly permitted operations in `seguridad`. Do not add writes to `cruda` or `limpia`.
 - CSV parsing, raw inserts, and CSV validation are Python microservice concerns. The .NET API may consume their resulting data, not duplicate their upload workflow.

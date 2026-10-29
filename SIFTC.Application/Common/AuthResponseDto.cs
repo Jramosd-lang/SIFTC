@@ -1,9 +1,13 @@
 ﻿namespace SIFTC.Application.Common;
 
-public record AuthResponseDto(
-    Guid IdUsuario,
-    string Email,
-    string NombreCompleto,
-    string Rol,
-    string Token
+public sealed record AuthResponseDto(
+    string Token,
+    int ExpiraEn,
+    AuthUsuarioDto Usuario
+);
+
+public sealed record AuthUsuarioDto(
+    Guid Id,
+    string Nombre,
+    string Rol
 );

@@ -12,13 +12,17 @@ public class AutenticarUsuarioCommandHandler(
     IJwtTokenGenerator jwtTokenGenerator)
     : IRequestHandler<AutenticarUsuarioCommand, Result<AuthResponseDto>>
 {
-
     public async Task<Result<AuthResponseDto>> Handle(AutenticarUsuarioCommand request, CancellationToken cancellationToken)
     {
-        var usuario = await usuarioRepository.GetByEmailAsync(request.Email);
-
-        // Usamos ErrorType.Unauthorized para que luego la API sepa devolver un HTTP 401
+        var identificador = request.Email ?? request.Usuario;
         var credencialesInvalidas = new Error("auth.unauthorized", "El usuario o la contraseña son incorrectos.", ErrorType.Unauthorized);
+
+        if (string.IsNullOrWhiteSpace(identificador))
+        {
+            return Result.Failure<AuthResponseDto>(credencialesInvalidas);
+        }
+
+        var usuario = await usuarioRepository.GetByEmailAsync(identificador.Trim());
 
         if (usuario is null)
         {
@@ -33,12 +37,12 @@ public class AutenticarUsuarioCommandHandler(
         var token = jwtTokenGenerator.GenerateToken(usuario);
 
         var dto = new AuthResponseDto(
-            usuario.IdUsuario,
-            usuario.Email,
-            $"{usuario.PrimerNombre} {usuario.PrimerApellido}".Trim(),
-            usuario.Rol.Nombre,
-            token
-        );
+            token,
+            jwtTokenGenerator.ExpirySeconds,
+            new AuthUsuarioDto(
+                usuario.IdUsuario,
+                $"{usuario.PrimerNombre} {usuario.PrimerApellido}".Trim(),
+                usuario.Rol.Nombre));
 
         return Result.Success(dto);
     }

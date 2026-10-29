@@ -1,0 +1,11 @@
+**/bin/
+**/obj/
+.git/
+.vs/
+**/.vs/
+**/appsettings.json
+**/appsettings.Development.json
+**/*.user
+SIFTC.API/SIFTC.API.http
+docs/
+database/

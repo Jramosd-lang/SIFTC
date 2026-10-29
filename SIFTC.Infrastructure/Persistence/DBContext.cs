@@ -11,6 +11,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<MatrizFinancieraCruda> MatrizFinancieraCruda => Set<MatrizFinancieraCruda>();
     public DbSet<Sector> Sectores => Set<Sector>();
     public DbSet<Entidad> Entidades => Set<Entidad>();
+    public DbSet<EntidadCotizacion> EntidadesCotizacion => Set<EntidadCotizacion>();
     public DbSet<DatoFinanciero> DatosFinancieros => Set<DatoFinanciero>();
     public DbSet<Dimension> Dimensiones => Set<Dimension>();
     public DbSet<Metrica> Metricas => Set<Metrica>();
