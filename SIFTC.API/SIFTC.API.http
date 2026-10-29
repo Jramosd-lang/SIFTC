@@ -41,12 +41,6 @@ Accept: application/json
 
 ###
 
-GET {{SIFTC.API_HostAddress}}/api/v1/rankings?periodo=mensual&limit=10
-Authorization: Bearer {{token}}
-Accept: application/json
-
-###
-
 POST {{SIFTC.API_HostAddress}}/api/v1/cargas
 Authorization: Bearer {{token}}
 Content-Type: multipart/form-data; boundary=----SIFTCBoundary

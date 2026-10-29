@@ -12,7 +12,6 @@ namespace SIFTC.Api.Controllers;
 public sealed class RankingController(IMediator mediator) : BaseApiController
 {
     [HttpGet("ranking")]
-    [HttpGet("rankings")]
     [EndpointSummary("Obtiene el ranking desde el microservicio Python")]
     [EndpointDescription("Reenvía la consulta a GET /api/v1/ranking del microservicio. Filtros: sector, dimension (Rentabilidad, Liquidez, Solvencia, Crecimiento), periodo (diario, mensual, trimestral), orden (posicion, entidad, sector, ic, variacionPct), dir (asc, desc), limit (1..200) y offset (>=0).")]
     [ProducesResponseType<RankingResponseDto>(StatusCodes.Status200OK)]
