@@ -6,5 +6,6 @@ namespace SIFTC.Application.UseCases.Matriz.Commands.ValidarMatriz;
 public sealed record ValidarMatrizCommand(
     Stream Archivo,
     string NombreArchivo,
-    string ContentType
+    string ContentType,
+    string? Authorization
 ) : IRequest<Result<ValidacionMatrizResponse>>;

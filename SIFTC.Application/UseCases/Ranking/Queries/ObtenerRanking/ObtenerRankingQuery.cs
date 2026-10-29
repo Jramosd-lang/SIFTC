@@ -10,5 +10,6 @@ public sealed record ObtenerRankingQuery(
     string? Orden,
     string? Dir,
     int? Limit,
-    int? Offset
+    int? Offset,
+    string? Authorization
 ) : IRequest<Result<RankingResponseDto>>;

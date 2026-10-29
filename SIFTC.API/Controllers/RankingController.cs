@@ -29,7 +29,15 @@ public sealed class RankingController(IMediator mediator) : BaseApiController
         CancellationToken cancellationToken)
     {
         var result = await mediator.Send(
-            new ObtenerRankingQuery(sector, dimension, periodo, orden, dir, limit, offset),
+            new ObtenerRankingQuery(
+                sector,
+                dimension,
+                periodo,
+                orden,
+                dir,
+                limit,
+                offset,
+                Request.Headers.Authorization.ToString()),
             cancellationToken);
 
         return HandleResult(result);

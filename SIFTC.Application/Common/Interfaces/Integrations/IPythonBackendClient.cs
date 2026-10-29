@@ -8,11 +8,13 @@ public interface IPythonBackendClient
 {
     Task<Result<RankingResponseDto>> GetRankingAsync(
         RankingQuery query,
+        string? authorization,
         CancellationToken cancellationToken = default);
 
     Task<Result<ValidacionMatrizResponse>> ValidarMatrizAsync(
         Stream archivo,
         string nombreArchivo,
         string contentType,
+        string? authorization,
         CancellationToken cancellationToken = default);
 }

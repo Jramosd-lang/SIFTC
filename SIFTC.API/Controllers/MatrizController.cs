@@ -31,7 +31,11 @@ public sealed class MatrizController(IMediator mediator) : BaseApiController
 
         await using var stream = file.OpenReadStream();
         var result = await mediator.Send(
-            new ValidarMatrizCommand(stream, file.FileName, file.ContentType),
+            new ValidarMatrizCommand(
+                stream,
+                file.FileName,
+                file.ContentType,
+                Request.Headers.Authorization.ToString()),
             cancellationToken);
 
         if (result.IsFailure)

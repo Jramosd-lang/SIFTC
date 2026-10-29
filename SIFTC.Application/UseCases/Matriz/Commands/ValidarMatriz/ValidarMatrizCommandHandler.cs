@@ -12,5 +12,6 @@ public sealed class ValidarMatrizCommandHandler(IPythonBackendClient pythonBacke
             request.Archivo,
             request.NombreArchivo,
             request.ContentType,
+            request.Authorization,
             cancellationToken);
 }

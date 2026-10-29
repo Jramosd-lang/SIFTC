@@ -63,6 +63,7 @@ public sealed class ObtenerRankingQueryHandler(IPythonBackendClient pythonBacken
                 dir,
                 limit,
                 offset),
+            request.Authorization,
             cancellationToken);
 
         return ranking.IsSuccess

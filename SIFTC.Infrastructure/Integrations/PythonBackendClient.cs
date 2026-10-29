@@ -14,13 +14,16 @@ public sealed class PythonBackendClient(HttpClient httpClient) : IPythonBackendC
 
     public async Task<Result<RankingResponseDto>> GetRankingAsync(
         RankingQuery query,
+        string? authorization,
         CancellationToken cancellationToken = default)
     {
         var url = ConstruirUrlRanking(query);
 
         try
         {
-            using var response = await httpClient.GetAsync(url, cancellationToken);
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            AgregarAutorizacion(request, authorization);
+            using var response = await httpClient.SendAsync(request, cancellationToken);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -54,6 +57,7 @@ public sealed class PythonBackendClient(HttpClient httpClient) : IPythonBackendC
         Stream archivo,
         string nombreArchivo,
         string contentType,
+        string? authorization,
         CancellationToken cancellationToken = default)
     {
         using var form = new MultipartFormDataContent();
@@ -64,7 +68,9 @@ public sealed class PythonBackendClient(HttpClient httpClient) : IPythonBackendC
 
         try
         {
-            using var response = await httpClient.PostAsync("v1/validar-matriz", form, cancellationToken);
+            using var request = new HttpRequestMessage(HttpMethod.Post, "v1/validar-matriz") { Content = form };
+            AgregarAutorizacion(request, authorization);
+            using var response = await httpClient.SendAsync(request, cancellationToken);
             var body = await response.Content.ReadAsStringAsync(cancellationToken);
 
             if (response.StatusCode == HttpStatusCode.UnprocessableEntity)
@@ -162,6 +168,14 @@ public sealed class PythonBackendClient(HttpClient httpClient) : IPythonBackendC
         }
 
         return ("El CSV contiene errores de validación.", []);
+    }
+
+    private static void AgregarAutorizacion(HttpRequestMessage request, string? authorization)
+    {
+        if (!string.IsNullOrWhiteSpace(authorization))
+        {
+            request.Headers.TryAddWithoutValidation("Authorization", authorization.Trim());
+        }
     }
 
     private static Result<T> FalloDependencia<T>(string codigo, string mensaje) =>
