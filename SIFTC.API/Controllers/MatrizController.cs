@@ -7,7 +7,7 @@ using SIFTC.Domain.Common;
 
 namespace SIFTC.Api.Controllers;
 
-[Authorize(Roles = "Analista financiero,Administrador")]
+[Authorize(Roles = RolesSistema.CargaMatriz)]
 [ApiController]
 [Route("api/v1")]
 public sealed class MatrizController(IMediator mediator) : BaseApiController

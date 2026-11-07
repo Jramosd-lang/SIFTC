@@ -11,7 +11,8 @@ public sealed class SectorConfiguration : IEntityTypeConfiguration<Sector>
         builder.ToTable("tbl_sectores", "limpia");
         builder.HasKey(s => s.IdSector);
         builder.Property(s => s.IdSector).HasColumnName("id_sector").HasDefaultValueSql("gen_random_uuid()");
-        builder.Property(s => s.Nombre).HasColumnName("nombre").HasMaxLength(30).IsRequired();
+        builder.Property(s => s.Nombre).HasColumnName("nombre").HasMaxLength(50).IsRequired();
         builder.HasIndex(s => s.Nombre).IsUnique();
     }
 }
+

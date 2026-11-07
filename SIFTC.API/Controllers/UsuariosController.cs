@@ -1,6 +1,7 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SIFTC.Api.Common;
 using SIFTC.Application.UseCases.Usuarios.Commands;
 
 namespace SIFTC.Api.Controllers;
@@ -9,7 +10,7 @@ namespace SIFTC.Api.Controllers;
 [ApiController]
 public class UsuariosController(IMediator mediator) : BaseApiController
 {
-    [Authorize(Roles = "Administrador")]
+    [Authorize(Roles = RolesSistema.Administrador)]
     [HttpPost("registrar")]
     [EndpointSummary("Registra un usuario")]
     [EndpointDescription("Requiere rol Administrador. Devuelve el identificador UUID del usuario creado.")]

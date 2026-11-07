@@ -7,12 +7,13 @@ public sealed class LoteCarga
     public DateTimeOffset FechaCarga { get; private set; }
     public int RegistrosTotales { get; private set; }
     public int RegistrosValidos { get; private set; }
+    public string EstadoCarga { get; private set; } = null!;
     public decimal? IndiceCalidad { get; private set; }
     public Guid IdUsuario { get; private set; }
     public Usuario Usuario { get; private set; } = null!;
     public ICollection<MatrizFinancieraCruda> RegistrosCrudos { get; private set; } = new List<MatrizFinancieraCruda>();
     private LoteCarga() { }
-    private LoteCarga(string nombreArchivo, int total, int validos, Guid idUsuario) { IdLote = Guid.CreateVersion7(); NombreArchivo = nombreArchivo; FechaCarga = DateTimeOffset.UtcNow; RegistrosTotales = total; RegistrosValidos = validos; IdUsuario = idUsuario; }
+    private LoteCarga(string nombreArchivo, int total, int validos, Guid idUsuario) { IdLote = Guid.CreateVersion7(); NombreArchivo = nombreArchivo; FechaCarga = DateTimeOffset.UtcNow; RegistrosTotales = total; RegistrosValidos = validos; EstadoCarga = "Exitoso"; IdUsuario = idUsuario; }
     public static Result<LoteCarga> Create(string nombreArchivo, int registrosTotales, int registrosValidos, Guid idUsuario)
     {
         if (string.IsNullOrWhiteSpace(nombreArchivo)) return Result.Failure<LoteCarga>(new Error("lote.archivo.required", "El nombre del archivo es obligatorio.", ErrorType.Validation));

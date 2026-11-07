@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using SIFTC.Api.Common;
 using SIFTC.Domain.Common;
@@ -8,6 +9,12 @@ namespace SIFTC.Api.Controllers;
 [ApiController]
 public abstract class BaseApiController : ControllerBase
 {
+    protected Guid? ObtenerUsuarioId()
+    {
+        var valor = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
+        return Guid.TryParse(valor, out var id) ? id : null;
+    }
+
     protected IActionResult HandleFailure(Result result)
     {
         if (result.IsSuccess)

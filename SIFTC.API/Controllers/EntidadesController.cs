@@ -9,7 +9,7 @@ using SIFTC.Application.UseCases.Entidades.Queries.ObtenerOhlc;
 
 namespace SIFTC.Api.Controllers;
 
-[Authorize]
+[Authorize(Roles = RolesSistema.Consulta)]
 [Route("api/v1/entidades")]
 public sealed class EntidadesController(IMediator mediator) : BaseApiController
 {

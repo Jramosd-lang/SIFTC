@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SIFTC.Api.Common;
 
 namespace SIFTC.Api.Controllers;
 
@@ -7,7 +8,7 @@ namespace SIFTC.Api.Controllers;
 [Route("api/v1/parametros")]
 public sealed class ParametrosController : BaseApiController
 {
-    [Authorize(Roles = "Analista financiero,Administrador")]
+    [Authorize(Roles = RolesSistema.Parametros)]
     [HttpPost("actualizar-umbral")]
     [EndpointSummary("Actualiza el umbral de un parámetro")]
     [EndpointDescription("Endpoint de administración reservado para Analista financiero o Administrador.")]

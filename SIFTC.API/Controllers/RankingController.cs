@@ -1,12 +1,13 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SIFTC.Api.Common;
 using SIFTC.Application.UseCases.Ranking;
 using SIFTC.Application.UseCases.Ranking.Queries.ObtenerRanking;
 
 namespace SIFTC.Api.Controllers;
 
-[Authorize]
+[Authorize(Roles = RolesSistema.Consulta)]
 [ApiController]
 [Route("api/v1")]
 public sealed class RankingController(IMediator mediator) : BaseApiController

@@ -13,11 +13,13 @@ public sealed class MetricaConfiguration : IEntityTypeConfiguration<Metrica>
         builder.Property(m => m.IdMetrica).HasColumnName("id_metrica").HasDefaultValueSql("gen_random_uuid()");
         builder.Property(m => m.Codigo).HasColumnName("codigo").HasMaxLength(10).IsRequired();
         builder.HasIndex(m => m.Codigo).IsUnique();
-        builder.Property(m => m.Nombre).HasColumnName("nombre").HasMaxLength(50).IsRequired();
-        builder.Property(m => m.Formula).HasColumnName("formula").HasMaxLength(120).IsRequired();
+        builder.Property(m => m.Nombre).HasColumnName("nombre").HasMaxLength(80).IsRequired();
+        builder.Property(m => m.Formula).HasColumnName("formula").HasMaxLength(200).IsRequired();
         builder.Property(m => m.Frecuencia).HasColumnName("frecuencia").HasConversion<string>().HasMaxLength(12).IsRequired();
         builder.Property(m => m.IdDimension).HasColumnName("id_dimension");
         builder.HasIndex(m => m.IdDimension).HasDatabaseName("ix_metricas_dimension");
         builder.HasOne(m => m.Dimension).WithMany(d => d.Metricas).HasForeignKey(m => m.IdDimension).OnDelete(DeleteBehavior.Restrict);
     }
 }
+
+

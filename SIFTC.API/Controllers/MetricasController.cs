@@ -7,7 +7,7 @@ using SIFTC.Application.UseCases.Metricas.Queries.ListarMetricas;
 
 namespace SIFTC.Api.Controllers;
 
-[Authorize]
+[Authorize(Roles = RolesSistema.Consulta)]
 [Route("api/v1/metricas")]
 public sealed class MetricasController(IMediator mediator) : BaseApiController
 {
