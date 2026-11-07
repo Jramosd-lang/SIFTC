@@ -13,10 +13,28 @@ public sealed class MetricasController(IMediator mediator) : BaseApiController
 {
     [HttpGet]
     [EndpointSummary("Lista las métricas calculadas por entidad y fecha")]
-    [EndpointDescription("periodo filtra por frecuencia: diario, mensual o trimestral. fecha usa ISO 8601 (yyyy-MM-dd). Filtros opcionales: sector y dimension (Rentabilidad, Liquidez, Solvencia, Crecimiento, Mercado o Trazabilidad). page desde 1; size de 1 a 100 (por defecto 100). sort: fecha, codigo, nombre, sector, dimension, codigoMetrica, valor o valorNormalizado; dir: asc o desc. El total de registros viaja en la cabecera X-Total-Count.")]
+    [EndpointDescription("""
+        Roles admitidos: Administrador, Data Steward, Analista financiero, Gerente / Directivo, Auditor y Usuario móvil.
+
+        Devuelve una fila por métrica calculada por la capa analítica.
+        Parámetros:
+        - sector: nombre exacto del sector. Vacío = todos.
+        - periodo: frecuencia de la métrica: diario, mensual o trimestral. Vacío = todas.
+        - fecha: periodo exacto en ISO 8601 (yyyy-MM-dd). Ejemplo: 2026-09-01. Vacío = todos.
+        - dimension: Rentabilidad, Liquidez, Solvencia, Crecimiento, Mercado o Trazabilidad.
+        - page: entero >= 1. Por defecto 1.
+        - size: entero entre 1 y 100. Por defecto 100.
+        - sort: fecha, codigo, nombre, sector, dimension, codigoMetrica, valor o valorNormalizado.
+        - dir: asc o desc.
+        El total de registros viaja en la cabecera X-Total-Count.
+
+        La fecha de los datos del corte va del 2024-10-01 al 2026-09-01. Una fecha fuera de ese rango devuelve 0 filas.
+        Respuesta: arreglo de { entidadId, codigo, nombre, sector, fecha, codigoMetrica, nombreMetrica, dimension, formula, frecuencia, valor, valorNormalizado }.
+        """)]
     [ProducesResponseType<IReadOnlyList<MetricaDto>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden, "application/problem+json")]
     public async Task<IActionResult> Listar(
         [FromQuery] string? sector,
         [FromQuery] string? periodo,

@@ -2,7 +2,14 @@
 
 namespace SIFTC.Application.UseCases.Entidades;
 
-// Contrato de la guía de Frontend (5.2): "codigo" es el ticker e "ic" el cierre de la última cotización.
+/// <summary>Entidad con su cotización actual.</summary>
+/// <param name="Id">Identificador UUID de la entidad.</param>
+/// <param name="Codigo">Ticker o código único de la entidad (por ejemplo ENT001).</param>
+/// <param name="Nombre">Nombre comercial o razón social.</param>
+/// <param name="Sector">Sector económico al que pertenece.</param>
+/// <param name="Ic">Último Índice de Competitividad (0 a 100).</param>
+/// <param name="Variacion">Variación absoluta frente al cierre anterior.</param>
+/// <param name="VariacionPct">Variación porcentual frente al cierre anterior.</param>
 public record EntidadDto(
     Guid Id,
     string Codigo,

@@ -126,6 +126,7 @@ builder.Services.AddOpenApi(options =>
             Description = "Token JWT devuelto por /api/v1/auth/login"
         };
 
+        DescribirSchemas(document);
         return Task.CompletedTask;
     });
 
@@ -196,3 +197,113 @@ app.UseAuthorization();
 
 app.MapControllers();
 app.Run();
+
+static void DescribirSchemas(OpenApiDocument document)
+{
+    Describir(document, "EntidadDto",
+        ("id", "Identificador UUID de la entidad."),
+        ("codigo", "Ticker o código único de la entidad, por ejemplo ENT001."),
+        ("nombre", "Nombre comercial o razón social."),
+        ("sector", "Sector económico al que pertenece."),
+        ("ic", "Último Índice de Competitividad (0 a 100)."),
+        ("variacion", "Variación absoluta frente al cierre anterior."),
+        ("variacionPct", "Variación porcentual frente al cierre anterior."));
+
+    Describir(document, "MetricaDto",
+        ("entidadId", "Identificador UUID de la entidad."),
+        ("codigo", "Ticker de la entidad."),
+        ("nombre", "Nombre de la entidad."),
+        ("sector", "Sector económico."),
+        ("fecha", "Periodo del dato en formato ISO 8601 (yyyy-MM-dd)."),
+        ("codigoMetrica", "Código del catálogo: RNT-01, LIQ-01, END-01, CRE-01, etc."),
+        ("nombreMetrica", "Nombre legible de la métrica."),
+        ("dimension", "Dimensión del catálogo: Rentabilidad, Liquidez, Solvencia, Crecimiento, Mercado o Trazabilidad."),
+        ("formula", "Fórmula usada para el cálculo."),
+        ("frecuencia", "Frecuencia de la métrica: Diaria, Mensual o Trimestral."),
+        ("valor", "Valor calculado como proporción o veces, según la métrica."),
+        ("valorNormalizado", "Valor llevado a escala 0 a 1 para el cálculo del IC."));
+
+    Describir(document, "OhlcResponseDto",
+        ("entidadId", "Identificador UUID de la entidad."),
+        ("entidad", "Nombre de la entidad."),
+        ("periodo", "Frecuencia usada: Diaria, Mensual o Trimestral."),
+        ("serie", "Puntos OHLC ordenados de la fecha más antigua a la más reciente."));
+
+    Describir(document, "OhlcPuntoDto",
+        ("fecha", "Fecha del periodo en formato ISO 8601."),
+        ("apertura", "Primer valor del IC en el periodo."),
+        ("maximo", "Valor máximo del IC en el periodo."),
+        ("minimo", "Valor mínimo del IC en el periodo."),
+        ("cierre", "Último valor del IC en el periodo."),
+        ("variacion", "Variación absoluta frente al cierre anterior."),
+        ("variacionPct", "Variación porcentual frente al cierre anterior."));
+
+    Describir(document, "RankingResponseDto",
+        ("periodo", "Frecuencia solicitada: diario, mensual o trimestral."),
+        ("total", "Cantidad total de entidades que cumplen los filtros."),
+        ("items", "Filas ordenadas según orden y dir."));
+
+    Describir(document, "RankingItemDto",
+        ("posicion", "Posición actual (1 es la mejor)."),
+        ("cambioPosicion", "Positivo si subió, negativo si bajó, 0 si mantuvo."),
+        ("entidadId", "Identificador UUID de la entidad."),
+        ("entidad", "Nombre de la entidad."),
+        ("sector", "Sector económico."),
+        ("ic", "IC general o puntaje de la dimensión (0 a 100)."),
+        ("variacionPct", "Variación porcentual frente al periodo anterior."));
+
+    Describir(document, "AuthResponseDto",
+        ("token", "JWT que debe enviarse como Bearer en los demás endpoints."),
+        ("expiraEn", "Vigencia del token en segundos."),
+        ("usuario", "Datos del usuario autenticado."));
+
+    Describir(document, "AuthUsuarioDto",
+        ("id", "Identificador UUID del usuario."),
+        ("nombre", "Nombre completo."),
+        ("rol", "Rol del sistema; determina los permisos."));
+
+    Describir(document, "AutenticarUsuarioCommand",
+        ("usuario", "Correo o usuario registrado. Es el identificador de login."),
+        ("password", "Contraseña en texto plano; se valida contra el hash bcrypt."));
+
+    Describir(document, "CrearUsuarioCommand",
+        ("email", "Correo único del usuario."),
+        ("password", "Contraseña en texto plano; el backend la guarda con bcrypt."),
+        ("primerNombre", "Primer nombre."),
+        ("primerApellido", "Primer apellido."),
+        ("idRol", "UUID del rol existente en seguridad.roles."));
+
+    Describir(document, "CrearMetricaCommand",
+        ("codigo", "Código único, por ejemplo RNT-01."),
+        ("nombre", "Nombre visible de la métrica."),
+        ("formula", "Fórmula de cálculo."),
+        ("frecuencia", "Diaria, Mensual o Trimestral."),
+        ("idDimension", "UUID de la dimensión existente."));
+}
+
+static void Describir(
+    OpenApiDocument document,
+    string nombre,
+    params (string Campo, string Descripcion)[] campos)
+{
+    if (document.Components?.Schemas is null)
+    {
+        return;
+    }
+
+    if (!document.Components.Schemas.TryGetValue(nombre, out var schema) ||
+        schema is not OpenApiSchema concreto ||
+        concreto.Properties is null)
+    {
+        return;
+    }
+
+    foreach (var (campo, descripcion) in campos)
+    {
+        if (concreto.Properties.TryGetValue(campo, out var propiedad) &&
+            propiedad is OpenApiSchema propiedadConcreta)
+        {
+            propiedadConcreta.Description = descripcion;
+        }
+    }
+}

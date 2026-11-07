@@ -17,7 +17,19 @@ public sealed class WatchlistController(IMediator mediator) : BaseApiController
 {
     [HttpGet]
     [EndpointSummary("Lista las entidades seguidas por el usuario autenticado")]
-    [EndpointDescription("Devuelve la watchlist personal con la cotización actual de cada entidad. El usuario se toma del claim sub del JWT.")]
+    [EndpointDescription("""
+        Roles admitidos: Administrador, Data Steward, Analista financiero, Gerente / Directivo, Auditor y Usuario móvil.
+
+        Devuelve la watchlist personal con la cotización actual de cada entidad.
+        El usuario se obtiene del claim sub del JWT; no se recibe idUsuario por parámetro.
+        Cada usuario solo puede ver su propia lista.
+
+        Respuesta: arreglo de { id, codigo, nombre, sector, ic, variacion, variacionPct }.
+        Ejemplo:
+        [
+          { "id": "4ebbf629-0d2d-46ef-b233-93421e13eaee", "codigo": "ENT001", "nombre": "Andina Energía S.A.", "sector": "Energía", "ic": 55.042, "variacion": -0.531, "variacionPct": -0.9555 }
+        ]
+        """)]
     [ProducesResponseType<IReadOnlyList<EntidadDto>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized, "application/problem+json")]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden, "application/problem+json")]
@@ -41,7 +53,16 @@ public sealed class WatchlistController(IMediator mediator) : BaseApiController
 
     [HttpPost("{idEntidad:guid}")]
     [EndpointSummary("Agrega una entidad a la watchlist")]
-    [EndpointDescription("Agrega la entidad a la watchlist del usuario autenticado. Es idempotente: si ya está seguida, responde 204.")]
+    [EndpointDescription("""
+        Roles admitidos: Administrador, Data Steward, Analista financiero, Gerente / Directivo, Auditor y Usuario móvil.
+
+        Agrega la entidad indicada a la watchlist del usuario autenticado.
+        Parámetro de ruta:
+        - idEntidad: UUID de una entidad existente.
+
+        Es idempotente: si ya está seguida, responde 204.
+        Responde 404 si la entidad no existe.
+        """)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized, "application/problem+json")]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden, "application/problem+json")]
@@ -66,7 +87,15 @@ public sealed class WatchlistController(IMediator mediator) : BaseApiController
 
     [HttpDelete("{idEntidad:guid}")]
     [EndpointSummary("Quita una entidad de la watchlist")]
-    [EndpointDescription("Quita la entidad de la watchlist del usuario autenticado. Es idempotente: si no estaba seguida, responde 204.")]
+    [EndpointDescription("""
+        Roles admitidos: Administrador, Data Steward, Analista financiero, Gerente / Directivo, Auditor y Usuario móvil.
+
+        Quita la entidad indicada de la watchlist del usuario autenticado.
+        Parámetro de ruta:
+        - idEntidad: UUID de la entidad.
+
+        Es idempotente: si no estaba seguida, responde 204.
+        """)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized, "application/problem+json")]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden, "application/problem+json")]

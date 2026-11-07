@@ -15,7 +15,16 @@ public sealed class MatrizController(IMediator mediator) : BaseApiController
     [HttpPost("cargas")]
     [Consumes("multipart/form-data")]
     [EndpointSummary("Carga y valida la matriz CSV")]
-    [EndpointDescription("Recibe el archivo en el campo multipart 'file' y lo reenvía a POST /v1/validar-matriz del microservicio Python. Si el CSV tiene errores, devuelve 422 con la lista de errores en la extensión 'errores'.")]
+    [EndpointDescription("""
+        Roles admitidos: Analista financiero y Administrador.
+
+        Recibe el archivo CSV de la matriz en el campo multipart 'file' y lo reenvía al microservicio Python.
+        El CSV debe estar separado por punto y coma (;), codificado en UTF-8 y contener las 15 columnas del diccionario.
+
+        Respuesta 200: el resultado del ETL.
+        Respuesta 422: el CSV tiene errores; la lista viaja en la extensión 'errores'.
+        Respuesta 503: el microservicio Python no está disponible.
+        """)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized, "application/problem+json")]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden, "application/problem+json")]

@@ -4,6 +4,9 @@ using SIFTC.Domain.Common;
 
 namespace SIFTC.Application.UseCases.Auth.Commands.AutenticarUsuario;
 
+/// <summary>Credenciales de acceso.</summary>
+/// <param name="Usuario">Correo o usuario registrado. Es el identificador de login.</param>
+/// <param name="Password">Contraseña en texto plano; se valida contra el hash bcrypt.</param>
 public sealed record AutenticarUsuarioCommand(
     string Usuario,
     string Password

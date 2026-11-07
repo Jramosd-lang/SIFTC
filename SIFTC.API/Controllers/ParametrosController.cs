@@ -11,7 +11,12 @@ public sealed class ParametrosController : BaseApiController
     [Authorize(Roles = RolesSistema.Parametros)]
     [HttpPost("actualizar-umbral")]
     [EndpointSummary("Actualiza el umbral de un parámetro")]
-    [EndpointDescription("Endpoint de administración reservado para Analista financiero o Administrador.")]
+    [EndpointDescription("""
+        Roles admitidos: Analista financiero y Administrador.
+
+        Endpoint de administración de parámetros. Actualmente devuelve un mensaje de confirmación;
+        el parámetro y su valor se conectarán en la HU de administración.
+        """)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized, "application/problem+json")]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden, "application/problem+json")]

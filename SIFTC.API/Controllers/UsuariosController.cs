@@ -13,7 +13,19 @@ public class UsuariosController(IMediator mediator) : BaseApiController
     [Authorize(Roles = RolesSistema.Administrador)]
     [HttpPost("registrar")]
     [EndpointSummary("Registra un usuario")]
-    [EndpointDescription("Requiere rol Administrador. Devuelve el identificador UUID del usuario creado.")]
+    [EndpointDescription("""
+        Roles admitidos: Administrador.
+
+        Cuerpo JSON:
+        - email: correo único del usuario.
+        - password: contraseña en texto plano; se guarda con bcrypt.
+        - primerNombre: primer nombre.
+        - primerApellido: primer apellido.
+        - idRol: UUID de un rol existente en seguridad.roles.
+
+        Respuesta 200: UUID del usuario creado.
+        Respuesta 409: el correo ya existe.
+        """)]
     [ProducesResponseType<Guid>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized, "application/problem+json")]

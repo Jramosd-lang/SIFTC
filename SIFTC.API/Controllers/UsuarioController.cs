@@ -10,7 +10,17 @@ public sealed class AuthController(IMediator mediator) : BaseApiController
 {
     [HttpPost("login")]
     [EndpointSummary("Inicia sesión y devuelve el token JWT")]
-    [EndpointDescription("Acepta 'usuario' y 'password'. Devuelve token, expiraEn y los datos del usuario autenticado.")]
+    [EndpointDescription("""
+        Endpoint público (no requiere token).
+
+        Cuerpo JSON:
+        - usuario: correo o usuario registrado.
+        - password: contraseña en texto plano.
+
+        Respuesta 200: { token, expiraEn, usuario: { id, nombre, rol } }.
+        El token debe enviarse como Bearer en los demás endpoints.
+        Respuesta 401: credenciales incorrectas.
+        """)]
     [ProducesResponseType<AuthResponseDto>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized, "application/problem+json")]
     public async Task<IActionResult> Login([FromBody] AutenticarUsuarioCommand command, CancellationToken cancellationToken)
