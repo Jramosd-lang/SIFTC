@@ -14,7 +14,7 @@ public sealed class AuthController(IMediator mediator) : BaseApiController
         Endpoint público (no requiere token).
 
         Cuerpo JSON:
-        - usuario: correo o usuario registrado.
+        - usuario: correo registrado. El backend usa el correo como identificador de login.
         - password: contraseña en texto plano.
 
         Respuesta 200: { token, expiraEn, usuario: { id, nombre, rol } }.
