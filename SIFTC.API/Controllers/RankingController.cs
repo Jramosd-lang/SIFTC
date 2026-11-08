@@ -7,7 +7,7 @@ using SIFTC.Application.UseCases.Ranking.Queries.ObtenerRanking;
 
 namespace SIFTC.Api.Controllers;
 
-[Authorize(Roles = RolesSistema.Consulta)]
+[Authorize(Roles = RolesSistema.Ranking)]
 [ApiController]
 [Route("api/v1")]
 public sealed class RankingController(IMediator mediator) : BaseApiController
@@ -15,10 +15,12 @@ public sealed class RankingController(IMediator mediator) : BaseApiController
     [HttpGet("ranking")]
     [EndpointSummary("Obtiene el ranking general o por dimensión")]
     [EndpointDescription("""
-        Roles admitidos: Administrador, Data Steward, Analista financiero, Gerente / Directivo, Auditor y Usuario móvil.
+        Roles admitidos: Administrador, Data Steward, Analista financiero, Gerente / Directivo y Auditor.
+        Usuario móvil no tiene acceso al ranking.
 
         Devuelve el ranking de entidades por IC. Si se envía dimension, calcula el puntaje de esa dimensión
         (promedio de sus métricas normalizadas) y ordena por ese puntaje.
+        Para Gerente / Directivo, posicion y cambioPosicion se devuelven en null.
         Parámetros:
         - sector: nombre exacto del sector. Vacío = todos.
         - dimension: Rentabilidad, Liquidez, Solvencia o Crecimiento. Vacío = IC general.
@@ -57,6 +59,16 @@ public sealed class RankingController(IMediator mediator) : BaseApiController
                 offset,
                 Request.Headers.Authorization.ToString()),
             cancellationToken);
+
+        if (result.IsSuccess && User.IsInRole(RolesSistema.Gerente))
+        {
+            var ranking = result.Value;
+            var items = ranking.Items
+                .Select(item => item with { Posicion = null, CambioPosicion = null })
+                .ToList();
+
+            return Ok(ranking with { Items = items });
+        }
 
         return HandleResult(result);
     }

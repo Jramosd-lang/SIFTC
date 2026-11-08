@@ -10,11 +10,11 @@ using SIFTC.Domain.Common;
 
 namespace SIFTC.Api.Controllers;
 
-[Authorize(Roles = RolesSistema.Consulta)]
 [ApiController]
 [Route("api/v1/watchlist")]
 public sealed class WatchlistController(IMediator mediator) : BaseApiController
 {
+    [Authorize(Roles = RolesSistema.Consulta)]
     [HttpGet]
     [EndpointSummary("Lista las entidades seguidas por el usuario autenticado")]
     [EndpointDescription("""
@@ -51,10 +51,11 @@ public sealed class WatchlistController(IMediator mediator) : BaseApiController
         return HandleResult(result);
     }
 
+    [Authorize(Roles = RolesSistema.UsuarioMovil)]
     [HttpPost("{idEntidad:guid}")]
     [EndpointSummary("Agrega una entidad a la watchlist")]
     [EndpointDescription("""
-        Roles admitidos: Administrador, Data Steward, Analista financiero, Gerente / Directivo, Auditor y Usuario móvil.
+        Roles admitidos: solo Usuario móvil. Los demás roles reciben 403.
 
         Agrega la entidad indicada a la watchlist del usuario autenticado.
         Parámetro de ruta:
@@ -85,10 +86,11 @@ public sealed class WatchlistController(IMediator mediator) : BaseApiController
         return result.IsSuccess ? NoContent() : HandleFailure(result);
     }
 
+    [Authorize(Roles = RolesSistema.UsuarioMovil)]
     [HttpDelete("{idEntidad:guid}")]
     [EndpointSummary("Quita una entidad de la watchlist")]
     [EndpointDescription("""
-        Roles admitidos: Administrador, Data Steward, Analista financiero, Gerente / Directivo, Auditor y Usuario móvil.
+        Roles admitidos: solo Usuario móvil. Los demás roles reciben 403.
 
         Quita la entidad indicada de la watchlist del usuario autenticado.
         Parámetro de ruta:

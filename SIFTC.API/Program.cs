@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
@@ -188,7 +189,24 @@ if (documentationEnabled)
 }
 
 app.UseHttpsRedirection();
-app.UseExceptionHandler();
+app.UseExceptionHandler(exceptionHandlerApp =>
+{
+    exceptionHandlerApp.Run(async context =>
+    {
+        var exception = context.Features.Get<IExceptionHandlerFeature>()?.Error;
+        if (exception is not null)
+        {
+            app.Logger.LogError(exception, "Error no controlado en {Path}", context.Request.Path);
+        }
+
+        await ProblemDetailsResponse.WriteAsync(
+            context,
+            StatusCodes.Status500InternalServerError,
+            "server.error",
+            "Error interno",
+            "Ocurrió un error interno al procesar la solicitud.");
+    });
+});
 app.UseCors("Frontend");
 
 // 3. Middlewares de seguridad (El orden es obligatorio)
@@ -244,8 +262,8 @@ static void DescribirSchemas(OpenApiDocument document)
         ("items", "Filas ordenadas según orden y dir."));
 
     Describir(document, "RankingItemDto",
-        ("posicion", "Posición actual (1 es la mejor)."),
-        ("cambioPosicion", "Positivo si subió, negativo si bajó, 0 si mantuvo."),
+        ("posicion", "Posición actual (1 es la mejor); null para Gerente / Directivo."),
+        ("cambioPosicion", "Positivo si subió, negativo si bajó, 0 si mantuvo; null para Gerente / Directivo."),
         ("entidadId", "Identificador UUID de la entidad."),
         ("entidad", "Nombre de la entidad."),
         ("sector", "Sector económico."),

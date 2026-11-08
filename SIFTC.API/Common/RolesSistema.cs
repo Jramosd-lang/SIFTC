@@ -17,6 +17,13 @@ public static class RolesSistema
         Auditor + "," +
         UsuarioMovil;
 
+    public const string Ranking =
+        Administrador + "," +
+        DataSteward + "," +
+        AnalistaFinanciero + "," +
+        Gerente + "," +
+        Auditor;
+
     public const string CargaMatriz = AnalistaFinanciero + "," + Administrador;
     public const string Parametros = AnalistaFinanciero + "," + Administrador;
 }
