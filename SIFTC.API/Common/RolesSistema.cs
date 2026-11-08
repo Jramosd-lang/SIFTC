@@ -25,5 +25,14 @@ public static class RolesSistema
         Auditor;
 
     public const string CargaMatriz = AnalistaFinanciero + "," + Administrador;
+
+    public const string AprobacionesLectura =
+        Administrador + "," +
+        DataSteward + "," +
+        AnalistaFinanciero + "," +
+        Auditor;
+
+    public const string AprobacionesDecision = AnalistaFinanciero;
+
     public const string Parametros = AnalistaFinanciero + "," + Administrador;
 }

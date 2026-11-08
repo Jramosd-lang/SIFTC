@@ -27,6 +27,7 @@ public abstract class BaseApiController : ControllerBase
             ErrorType.Validation => (StatusCodes.Status422UnprocessableEntity, "Solicitud inválida", result.Error.Message, (string?)null),
             ErrorType.NotFound => (StatusCodes.Status404NotFound, "Not Found", "Recurso no encontrado", ProblemDetailsResponse.AboutBlank),
             ErrorType.Unauthorized => (StatusCodes.Status401Unauthorized, "Unauthorized", result.Error.Message, ProblemDetailsResponse.AboutBlank),
+            ErrorType.Forbidden => (StatusCodes.Status403Forbidden, "Forbidden", result.Error.Message, ProblemDetailsResponse.AboutBlank),
             ErrorType.Conflict => (StatusCodes.Status409Conflict, "Conflicto", result.Error.Message, (string?)null),
             ErrorType.Dependency => (StatusCodes.Status503ServiceUnavailable, "Servicio no disponible", result.Error.Message, (string?)null),
             _ => (StatusCodes.Status400BadRequest, "Solicitud incorrecta", result.Error.Message, (string?)null)

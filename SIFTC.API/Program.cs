@@ -270,6 +270,22 @@ static void DescribirSchemas(OpenApiDocument document)
         ("ic", "IC general o puntaje de la dimensión (0 a 100)."),
         ("variacionPct", "Variación porcentual frente al periodo anterior."));
 
+    Describir(document, "PublicacionPendienteDto",
+        ("idLote", "Identificador UUID del lote."),
+        ("nombreArchivo", "Nombre del CSV cargado."),
+        ("fechaCarga", "Fecha de registro del lote."),
+        ("registrosTotales", "Filas leídas del CSV."),
+        ("registrosValidos", "Filas procesadas por el ETL."),
+        ("estadoCarga", "Exitoso o Fallido."),
+        ("estado", "pendiente, publicado o rechazado."),
+        ("idUsuarioEjecutor", "Usuario que ejecutó la carga."),
+        ("idUsuarioDecision", "Usuario que aprobó o rechazó; null si está pendiente."),
+        ("fechaDecision", "Fecha de la decisión; null si está pendiente."),
+        ("comentario", "Comentario de rechazo, si existe."));
+
+    Describir(document, "RechazarPublicacionRequest",
+        ("comentario", "Motivo del rechazo; obligatorio y máximo 500 caracteres."));
+
     Describir(document, "AuthResponseDto",
         ("token", "JWT que debe enviarse como Bearer en los demás endpoints."),
         ("expiraEn", "Vigencia del token en segundos."),
