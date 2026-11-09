@@ -1,6 +1,5 @@
-﻿namespace SIFTC.Domain.Entities;
-
-// cruda.ext_matriz_financiera_entidades: copia fiel del CSV, todo en texto.
+using SIFTC.Domain.Common;
+namespace SIFTC.Domain.Entities;
 public sealed class MatrizFinancieraCruda
 {
     public Guid IdCruda { get; private set; }
@@ -22,6 +21,9 @@ public sealed class MatrizFinancieraCruda
     public string? Ebit { get; private set; }
     public string? GastosFinancieros { get; private set; }
     public DateTimeOffset FechaCarga { get; private set; }
-
     private MatrizFinancieraCruda() { }
+    private MatrizFinancieraCruda(Guid idLote, string? codigo, string? nombre, string? sector, string? periodo) { IdCruda = Guid.CreateVersion7(); IdLote = idLote; CodigoEntidad = codigo; NombreEntidad = nombre; Sector = sector; Periodo = periodo; FechaCarga = DateTimeOffset.UtcNow; }
+    public static Result<MatrizFinancieraCruda> Create(Guid idLote, string? codigoEntidad, string? nombreEntidad, string? sector, string? periodo) => idLote == Guid.Empty
+        ? Result.Failure<MatrizFinancieraCruda>(new Error("cruda.lote.required", "El lote es obligatorio.", ErrorType.Validation))
+        : Result.Success(new MatrizFinancieraCruda(idLote, codigoEntidad, nombreEntidad, sector, periodo));
 }

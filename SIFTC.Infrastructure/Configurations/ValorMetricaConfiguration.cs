@@ -12,7 +12,7 @@ public sealed class ValorMetricaConfiguration : IEntityTypeConfiguration<ValorMe
         builder.HasKey(v => v.IdValor);
         builder.Property(v => v.IdValor).HasColumnName("id_valor").HasDefaultValueSql("gen_random_uuid()");
         builder.Property(v => v.Periodo).HasColumnName("periodo");
-        builder.Property(v => v.Valor).HasColumnName("valor").HasPrecision(14, 6);
+        builder.Property(v => v.Valor).HasColumnName("valor").HasPrecision(20, 6);
         builder.Property(v => v.ValorNormalizado).HasColumnName("valor_normalizado").HasPrecision(9, 8);
         builder.Property(v => v.FechaCarga).HasColumnName("fecha_carga").HasDefaultValueSql("now()");
         builder.Property(v => v.IdLote).HasColumnName("id_lote");
@@ -31,3 +31,4 @@ public sealed class ValorMetricaConfiguration : IEntityTypeConfiguration<ValorMe
         builder.HasOne<DatoFinanciero>().WithMany().HasForeignKey(v => v.IdRegistroOrigen).OnDelete(DeleteBehavior.Restrict);
     }
 }
+

@@ -11,9 +11,9 @@ public sealed class RolSistemaConfiguration : IEntityTypeConfiguration<RolSistem
         builder.ToTable("roles", "seguridad");
         builder.HasKey(r => r.IdRol);
         builder.Property(r => r.IdRol).HasColumnName("id_rol").HasDefaultValueSql("gen_random_uuid()");
-        builder.Property(r => r.Nombre).HasColumnName("nombre").HasMaxLength(30).IsRequired();
+        builder.Property(r => r.Nombre).HasColumnName("nombre").HasMaxLength(40).IsRequired();
         builder.HasIndex(r => r.Nombre).IsUnique();
-        builder.Property(r => r.Descripcion).HasColumnName("descripcion").HasMaxLength(150);
-        builder.Property(r => r.PermisosClave).HasColumnName("permisos_clave").HasMaxLength(60).IsRequired();
+        builder.Property(r => r.Descripcion).HasColumnName("descripcion").HasColumnType("text");
+        builder.Property(r => r.PermisosClave).HasColumnName("permisos_clave").HasMaxLength(100).IsRequired();
     }
 }
