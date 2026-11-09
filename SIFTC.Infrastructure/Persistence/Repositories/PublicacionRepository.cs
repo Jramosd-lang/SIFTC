@@ -12,24 +12,22 @@ public sealed class PublicacionRepository(ApplicationDbContext dbContext) : IPub
     public async Task<IReadOnlyList<PublicacionPendienteDto>> ListarPendientesAsync(
         CancellationToken cancellationToken = default)
     {
-        return await (
-            from publicacion in dbContext.PublicacionesLote.AsNoTracking()
-            join lote in dbContext.LotesCarga.AsNoTracking()
-                on publicacion.IdLote equals lote.IdLote
-            where publicacion.Estado == "pendiente"
-            orderby lote.FechaCarga descending
-            select new PublicacionPendienteDto(
-                publicacion.IdLote,
-                lote.NombreArchivo,
-                lote.FechaCarga,
-                lote.RegistrosTotales,
-                lote.RegistrosValidos,
-                lote.EstadoCarga,
-                publicacion.Estado,
-                publicacion.IdUsuarioEjecutor,
-                publicacion.IdUsuarioDecision,
-                publicacion.FechaDecision,
-                publicacion.Comentario))
+        // rol_backend no tiene acceso a cruda: la vista expone los datos del lote.
+        return await dbContext.PublicacionesPendientes
+            .AsNoTracking()
+            .OrderByDescending(p => p.FechaCarga)
+            .Select(p => new PublicacionPendienteDto(
+                p.IdLote,
+                p.NombreArchivo,
+                p.FechaCarga,
+                p.RegistrosTotales,
+                p.RegistrosValidos,
+                p.EstadoCarga,
+                p.Estado,
+                p.IdUsuarioEjecutor,
+                p.IdUsuarioDecision,
+                p.FechaDecision,
+                p.Comentario))
             .ToListAsync(cancellationToken);
     }
 
