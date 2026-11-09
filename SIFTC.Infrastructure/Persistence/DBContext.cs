@@ -21,6 +21,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<EntidadSeguida> EntidadesSeguidas => Set<EntidadSeguida>();
     public DbSet<Auditoria> Auditorias => Set<Auditoria>();
     public DbSet<PublicacionLote> PublicacionesLote => Set<PublicacionLote>();
+    public DbSet<PublicacionPendiente> PublicacionesPendientes => Set<PublicacionPendiente>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
