@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SIFTC.Api.Common;
@@ -24,13 +24,13 @@ public sealed class RankingController(IMediator mediator) : BaseApiController
         Parámetros:
         - sector: nombre exacto del sector. Vacío = todos.
         - dimension: Rentabilidad, Liquidez, Solvencia o Crecimiento. Vacío = IC general.
-        - periodo: diario, mensual o trimestral. Se devuelve en la respuesta.
+         - periodo: Diaria, Mensual o Trimestral. Se devuelve en la respuesta.
         - orden: posicion, entidad, sector, ic o variacionPct. Por defecto ic.
         - dir: asc o desc. Por defecto desc.
         - limit: entero entre 1 y 200. Por defecto 50.
         - offset: entero >= 0. Por defecto 0.
         Valores permitidos de dimension: Rentabilidad, Liquidez, Solvencia, Crecimiento.
-        Valores permitidos de periodo: diario, mensual, trimestral.
+        Valores permitidos de periodo: Diaria, Mensual, Trimestral.
         Valores permitidos de orden: posicion, entidad, sector, ic, variacionPct.
         Valores permitidos de dir: asc, desc.
 
@@ -77,3 +77,4 @@ public sealed class RankingController(IMediator mediator) : BaseApiController
         return HandleResult(result);
     }
 }
+

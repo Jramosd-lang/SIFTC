@@ -64,18 +64,15 @@ public sealed class ListarMetricasQueryHandler(IMetricaQueryRepository metricaQu
         Frecuencia? frecuencia = null;
         if (!string.IsNullOrWhiteSpace(request.Periodo))
         {
-            frecuencia = request.Periodo.Trim().ToLowerInvariant() switch
+            if (!FrecuenciaParser.TryParse(request.Periodo, out var frecuenciaParseada))
             {
-                "diario" or "diaria" => Frecuencia.Diaria,
-                "mensual" => Frecuencia.Mensual,
-                "trimestral" => Frecuencia.Trimestral,
-                _ => null
-            };
-
-            if (frecuencia is null)
-            {
-                return Result.Failure<Pagina<MetricaDto>>(new Error("metricas.periodo.invalid", "El parámetro periodo admite: diario, mensual o trimestral.", ErrorType.Failure));
+                return Result.Failure<Pagina<MetricaDto>>(new Error(
+                    "metricas.periodo.invalid",
+                    "El parámetro periodo admite: Diaria, Mensual o Trimestral.",
+                    ErrorType.Failure));
             }
+
+            frecuencia = frecuenciaParseada;
         }
 
         DateOnly? fecha = null;

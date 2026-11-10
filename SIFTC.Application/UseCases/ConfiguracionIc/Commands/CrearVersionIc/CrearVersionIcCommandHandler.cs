@@ -1,4 +1,5 @@
-using MediatR;
+﻿using MediatR;
+using SIFTC.Application.Common;
 using SIFTC.Application.Common.Interfaces.Persistence;
 using SIFTC.Domain.Common;
 
@@ -31,12 +32,15 @@ public sealed class CrearVersionIcCommandHandler(
             return Task.FromResult(Result.Failure<Guid>(validacion.Error));
         }
 
+        FrecuenciaParser.TryParse(request.Frecuencia, out var frecuencia);
+
         return configuracionIcRepository.CrearVersionAsync(
             request.IdUsuario,
             request.Motivo.Trim(),
-            request.Frecuencia,
+            frecuencia.ToString(),
             request.Pesos,
             request.Umbrales ?? [],
             cancellationToken);
     }
 }
+

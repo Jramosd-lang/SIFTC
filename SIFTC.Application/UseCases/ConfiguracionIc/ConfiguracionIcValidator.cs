@@ -1,3 +1,4 @@
+﻿using SIFTC.Application.Common;
 using SIFTC.Domain.Common;
 
 namespace SIFTC.Application.UseCases.ConfiguracionIc;
@@ -5,7 +6,6 @@ namespace SIFTC.Application.UseCases.ConfiguracionIc;
 public static class ConfiguracionIcValidator
 {
     private const decimal ToleranciaSuma = 0.000001m;
-    private static readonly string[] Frecuencias = ["Diaria", "Mensual", "Trimestral"];
     private static readonly string[] Severidades = ["Informativa", "Advertencia", "Critica"];
 
     public static Result Validar(
@@ -22,7 +22,7 @@ public static class ConfiguracionIcValidator
                 ErrorType.Validation));
         }
 
-        if (frecuencia is null || !Frecuencias.Contains(frecuencia, StringComparer.Ordinal))
+        if (frecuencia is null || !FrecuenciaParser.TryParse(frecuencia, out _))
         {
             return Result.Failure(new Error(
                 "configuracionIc.frecuencia.invalid",
@@ -107,3 +107,4 @@ public static class ConfiguracionIcValidator
         return Result.Success();
     }
 }
+
