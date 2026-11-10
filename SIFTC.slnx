@@ -9,4 +9,7 @@
     <Project Path="SIFTC.Domain/SIFTC.Domain.csproj" />
     <Project Path="SIFTC.Infrastructure/SIFTC.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/SIFTC.Tests/SIFTC.Tests.csproj" />
+  </Folder>
 </Solution>

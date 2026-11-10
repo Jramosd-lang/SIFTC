@@ -34,5 +34,9 @@ public static class RolesSistema
 
     public const string AprobacionesDecision = AnalistaFinanciero;
 
+    // Escritura de parámetros (actualizar umbral).
     public const string Parametros = AnalistaFinanciero + "," + Administrador;
+
+    // Lectura de parámetros (pesos, fórmulas y frecuencias). D3: el Auditor solo lee.
+    public const string ParametrosLectura = Parametros + "," + Auditor;
 }
