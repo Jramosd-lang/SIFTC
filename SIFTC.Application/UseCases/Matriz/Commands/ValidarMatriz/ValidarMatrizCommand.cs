@@ -7,5 +7,6 @@ public sealed record ValidarMatrizCommand(
     Stream Archivo,
     string NombreArchivo,
     string ContentType,
-    string? Authorization
+    string? Authorization,
+    Guid? IdUsuario = null
 ) : IRequest<Result<ValidacionMatrizResponse>>;

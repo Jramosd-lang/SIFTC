@@ -44,7 +44,8 @@ public sealed class MatrizController(IMediator mediator) : BaseApiController
                 stream,
                 file.FileName,
                 file.ContentType,
-                Request.Headers.Authorization.ToString()),
+                Request.Headers.Authorization.ToString(),
+                ObtenerUsuarioId()),
             cancellationToken);
 
         if (result.IsFailure)
