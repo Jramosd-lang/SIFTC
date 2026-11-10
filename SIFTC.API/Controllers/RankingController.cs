@@ -29,6 +29,10 @@ public sealed class RankingController(IMediator mediator) : BaseApiController
         - dir: asc o desc. Por defecto desc.
         - limit: entero entre 1 y 200. Por defecto 50.
         - offset: entero >= 0. Por defecto 0.
+        Valores permitidos de dimension: Rentabilidad, Liquidez, Solvencia, Crecimiento.
+        Valores permitidos de periodo: diario, mensual, trimestral.
+        Valores permitidos de orden: posicion, entidad, sector, ic, variacionPct.
+        Valores permitidos de dir: asc, desc.
 
         Respuesta: { periodo, total, items: [{ posicion, cambioPosicion, entidadId, entidad, sector, ic, variacionPct }] }.
         cambioPosicion > 0 significa que subió; < 0 que bajó; 0 que mantuvo.

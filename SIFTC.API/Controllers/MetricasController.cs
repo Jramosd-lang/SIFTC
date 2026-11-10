@@ -26,6 +26,10 @@ public sealed class MetricasController(IMediator mediator) : BaseApiController
         - size: entero entre 1 y 100. Por defecto 100.
         - sort: fecha, codigo, nombre, sector, dimension, codigoMetrica, valor o valorNormalizado.
         - dir: asc o desc.
+        Valores permitidos de periodo: diario (o diaria), mensual, trimestral.
+        Valores permitidos de dimension: Rentabilidad, Liquidez, Solvencia, Crecimiento, Mercado, Trazabilidad.
+        Valores permitidos de sort: fecha, codigo, nombre, sector, dimension, codigoMetrica, valor, valorNormalizado.
+        Valores permitidos de dir: asc, desc.
         El total de registros viaja en la cabecera X-Total-Count.
 
         La fecha de los datos del corte va del 2024-10-01 al 2026-09-01. Una fecha fuera de ese rango devuelve 0 filas.
