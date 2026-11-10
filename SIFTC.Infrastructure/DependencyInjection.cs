@@ -25,6 +25,7 @@ public static class DependencyInjection
         services.AddScoped<IEntidadRepository, EntidadRepository>();
         services.AddScoped<IWatchlistRepository, WatchlistRepository>();
         services.AddScoped<IPublicacionRepository, PublicacionRepository>();
+        services.AddScoped<IConfiguracionIcRepository, ConfiguracionIcRepository>();
         services.AddScoped<ICotizacionQueryRepository, CotizacionQueryRepository>();
         services.AddScoped<IMetricaRepository, MetricaRepository>();
         services.AddScoped<IMetricaQueryRepository, MetricaQueryRepository>();
