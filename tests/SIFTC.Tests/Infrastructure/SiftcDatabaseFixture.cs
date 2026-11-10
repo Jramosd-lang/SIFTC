@@ -32,7 +32,8 @@ public sealed class SiftcDatabaseFixture : IAsyncLifetime
         "Script-17.sql",
         "Script-18-ajuste-diccionario.sql",
         "Script-19-flujo-aprobacion.sql",
-        "Script-20-auditoria-lectura.sql"
+        "Script-20-auditoria-lectura.sql",
+        "Script-21-matriz-cruda-lectura.sql"
     ];
 
     private readonly PostgreSqlContainer _contenedor = new PostgreSqlBuilder()

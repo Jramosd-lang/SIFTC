@@ -38,6 +38,8 @@ public static class RolesSistema
 
     public const string ParametrosLectura = Parametros + "," + Auditor;
 
-    // D4: bitácora de auditoría. Solo Administrador y Auditor consultan.
     public const string AuditoriaLectura = Administrador + "," + Auditor;
+
+    // Matriz financiera cruda (Confidencial). Según la matriz: Data Steward y Auditor leen.
+    public const string MatrizCrudaLectura = DataSteward + "," + Auditor;
 }
