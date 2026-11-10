@@ -1,4 +1,4 @@
-using System.IdentityModel.Tokens.Jwt;
+﻿using System.IdentityModel.Tokens.Jwt;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Security.Claims;
@@ -11,7 +11,7 @@ using Xunit;
 
 namespace SIFTC.Tests;
 
-// Parte 1: qué puede y qué no puede hacer rol_backend en la base (lo que usa la API en producción).
+// Parte 1: quÃ© puede y quÃ© no puede hacer rol_backend en la base (lo que usa la API en producciÃ³n).
 // Parte 2: la API corriendo como rol_backend sigue cumpliendo la matriz de la watchlist.
 [Collection("Base de datos")]
 public sealed class PermisosRolBackendTests(SiftcDatabaseFixture db)
@@ -32,7 +32,7 @@ public sealed class PermisosRolBackendTests(SiftcDatabaseFixture db)
     public async Task Rol_backend_puede_registrar_en_la_bitacora_de_auditoria()
     {
         var error = await EjecutarComoBackendAsync(
-            "INSERT INTO seguridad.auditorias (accion, detalle) VALUES ('prueba', 'verificación de permisos')");
+            "INSERT INTO seguridad.auditorias (accion, detalle) VALUES ('prueba', 'verificaciÃ³n de permisos')");
 
         Assert.Null(error);
     }
@@ -40,7 +40,6 @@ public sealed class PermisosRolBackendTests(SiftcDatabaseFixture db)
     [Theory]
     [InlineData("SELECT COUNT(*) FROM limpia.tbl_entidades")]
     [InlineData("SELECT COUNT(*) FROM cruda.lotes_carga")]
-    [InlineData("SELECT COUNT(*) FROM seguridad.auditorias")]
     public async Task Rol_backend_no_puede_leer_capas_ni_bitacora_que_no_le_corresponden(string sql)
     {
         var error = await EjecutarComoBackendAsync(sql);

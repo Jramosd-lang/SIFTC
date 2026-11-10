@@ -4,22 +4,35 @@ using SIFTC.Domain.Common;
 
 namespace SIFTC.Application.UseCases.Aprobaciones.Commands.AprobarPublicacion;
 
-public sealed class AprobarPublicacionCommandHandler(IPublicacionRepository publicacionRepository)
+public sealed class AprobarPublicacionCommandHandler(
+    IPublicacionRepository publicacionRepository,
+    IAuditoriaRepository auditoriaRepository)
     : IRequestHandler<AprobarPublicacionCommand, Result>
 {
-    public Task<Result> Handle(
+    public async Task<Result> Handle(
         AprobarPublicacionCommand request,
         CancellationToken cancellationToken)
     {
         if (request.IdLote == Guid.Empty)
         {
-            return Task.FromResult(Result.Failure(
-                new Error("aprobacion.lote.required", "El lote es obligatorio.", ErrorType.Validation)));
+            return Result.Failure(
+                new Error("aprobacion.lote.required", "El lote es obligatorio.", ErrorType.Validation));
         }
 
-        return publicacionRepository.AprobarAsync(
+        var resultado = await publicacionRepository.AprobarAsync(
             request.IdLote,
             request.IdUsuario,
             cancellationToken);
+
+        if (resultado.IsSuccess)
+        {
+            await auditoriaRepository.RegistrarAsync(
+                "publicacion.aprobada",
+                $"Lote {request.IdLote}",
+                request.IdUsuario,
+                cancellationToken);
+        }
+
+        return resultado;
     }
 }
