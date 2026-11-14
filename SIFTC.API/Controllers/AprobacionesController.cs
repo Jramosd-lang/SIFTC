@@ -24,6 +24,8 @@ public sealed class AprobacionesController(IMediator mediator) : BaseApiControll
 
         Devuelve los lotes en estado pendiente con sus datos de carga.
         Un lote solo puede ser aprobado o rechazado por un Analista financiero.
+        Valores de estado: pendiente, publicado, rechazado.
+        Valores de estadoCarga: Exitoso, Fallido.
         """)]
     [ProducesResponseType<IReadOnlyList<PublicacionPendienteDto>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized, "application/problem+json")]

@@ -1,4 +1,5 @@
-using MediatR;
+﻿using MediatR;
+using SIFTC.Application.Common;
 using SIFTC.Application.Common.Interfaces.Persistence;
 using SIFTC.Domain.Common;
 using SIFTC.Domain.Entities;
@@ -13,7 +14,8 @@ public sealed class ObtenerOhlcQueryHandler(
 {
     public async Task<Result<OhlcResponseDto>> Handle(ObtenerOhlcQuery request, CancellationToken cancellationToken)
     {
-        if (!TryParseFrecuencia(request.Periodo, out var frecuencia))
+        var frecuencia = Frecuencia.Diaria;
+        if (!string.IsNullOrWhiteSpace(request.Periodo) && !FrecuenciaParser.TryParse(request.Periodo, out frecuencia))
         {
             return Result.Failure<OhlcResponseDto>(new Error(
                 "ohlc.periodo.invalid",
@@ -124,3 +126,4 @@ public sealed class ObtenerOhlcQueryHandler(
         return serie;
     }
 }
+

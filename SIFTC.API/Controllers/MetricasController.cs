@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SIFTC.Api.Common;
@@ -19,13 +19,17 @@ public sealed class MetricasController(IMediator mediator) : BaseApiController
         Devuelve una fila por métrica calculada por la capa analítica.
         Parámetros:
         - sector: nombre exacto del sector. Vacío = todos.
-        - periodo: frecuencia de la métrica: diario, mensual o trimestral. Vacío = todas.
+        - periodo: frecuencia de la métrica: Diaria, Mensual o Trimestral. Vacío = todas.
         - fecha: periodo exacto en ISO 8601 (yyyy-MM-dd). Ejemplo: 2026-09-01. Vacío = todos.
         - dimension: Rentabilidad, Liquidez, Solvencia, Crecimiento, Mercado o Trazabilidad.
         - page: entero >= 1. Por defecto 1.
         - size: entero entre 1 y 100. Por defecto 100.
         - sort: fecha, codigo, nombre, sector, dimension, codigoMetrica, valor o valorNormalizado.
         - dir: asc o desc.
+        Valores permitidos de periodo: Diaria, Mensual, Trimestral. También se aceptan diario/diaria como alias.
+        Valores permitidos de dimension: Rentabilidad, Liquidez, Solvencia, Crecimiento, Mercado, Trazabilidad.
+        Valores permitidos de sort: fecha, codigo, nombre, sector, dimension, codigoMetrica, valor, valorNormalizado.
+        Valores permitidos de dir: asc, desc.
         El total de registros viaja en la cabecera X-Total-Count.
 
         La fecha de los datos del corte va del 2024-10-01 al 2026-09-01. Una fecha fuera de ese rango devuelve 0 filas.
@@ -57,3 +61,4 @@ public sealed class MetricasController(IMediator mediator) : BaseApiController
         return Ok(result.Value.Items);
     }
 }
+

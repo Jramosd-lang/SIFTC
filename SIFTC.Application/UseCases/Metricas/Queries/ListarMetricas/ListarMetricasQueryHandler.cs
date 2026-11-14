@@ -11,6 +11,15 @@ public sealed class ListarMetricasQueryHandler(IMetricaQueryRepository metricaQu
     : IRequestHandler<ListarMetricasQuery, Result<Pagina<MetricaDto>>>
 {
     private const int TamanoMaximoPagina = 100;
+    private static readonly string[] Dimensiones =
+    [
+        "Rentabilidad",
+        "Liquidez",
+        "Solvencia",
+        "Crecimiento",
+        "Mercado",
+        "Trazabilidad"
+    ];
 
     public async Task<Result<Pagina<MetricaDto>>> Handle(ListarMetricasQuery request, CancellationToken cancellationToken)
     {
@@ -37,21 +46,33 @@ public sealed class ListarMetricasQueryHandler(IMetricaQueryRepository metricaQu
             return Result.Failure<Pagina<MetricaDto>>(new Error("metricas.dir.invalid", "El parámetro dir admite: asc o desc.", ErrorType.Failure));
         }
 
+        string? dimension = null;
+        if (!string.IsNullOrWhiteSpace(request.Dimension))
+        {
+            dimension = Dimensiones.FirstOrDefault(d =>
+                string.Equals(d, request.Dimension.Trim(), StringComparison.OrdinalIgnoreCase));
+
+            if (dimension is null)
+            {
+                return Result.Failure<Pagina<MetricaDto>>(new Error(
+                    "metricas.dimension.invalid",
+                    "El parámetro dimension admite: Rentabilidad, Liquidez, Solvencia, Crecimiento, Mercado o Trazabilidad.",
+                    ErrorType.Failure));
+            }
+        }
+
         Frecuencia? frecuencia = null;
         if (!string.IsNullOrWhiteSpace(request.Periodo))
         {
-            frecuencia = request.Periodo.Trim().ToLowerInvariant() switch
+            if (!FrecuenciaParser.TryParse(request.Periodo, out var frecuenciaParseada))
             {
-                "diario" or "diaria" => Frecuencia.Diaria,
-                "mensual" => Frecuencia.Mensual,
-                "trimestral" => Frecuencia.Trimestral,
-                _ => null
-            };
-
-            if (frecuencia is null)
-            {
-                return Result.Failure<Pagina<MetricaDto>>(new Error("metricas.periodo.invalid", "El parámetro periodo admite: diario, mensual o trimestral.", ErrorType.Failure));
+                return Result.Failure<Pagina<MetricaDto>>(new Error(
+                    "metricas.periodo.invalid",
+                    "El parámetro periodo admite: Diaria, Mensual o Trimestral.",
+                    ErrorType.Failure));
             }
+
+            frecuencia = frecuenciaParseada;
         }
 
         DateOnly? fecha = null;
@@ -69,7 +90,7 @@ public sealed class ListarMetricasQueryHandler(IMetricaQueryRepository metricaQu
             request.Sector?.Trim(),
             frecuencia,
             fecha,
-            request.Dimension?.Trim(),
+            dimension,
             page,
             size,
             sort,
