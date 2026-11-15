@@ -51,4 +51,12 @@ public class EntidadRepository(ApplicationDbContext dbContext) : IEntidadReposit
             .AsNoTracking()
             .FirstOrDefaultAsync(e => e.IdEntidad == idEntidad, cancellationToken);
     }
+
+    public async Task<IReadOnlyList<EntidadCotizacion>> ListarTodasAsync(CancellationToken cancellationToken = default)
+    {
+        return await dbContext.EntidadesCotizacion
+            .AsNoTracking()
+            .OrderBy(e => e.Ticker)
+            .ToListAsync(cancellationToken);
+    }
 }

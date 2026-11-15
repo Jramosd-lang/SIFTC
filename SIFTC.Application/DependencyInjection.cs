@@ -1,4 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using SIFTC.Application.UseCases.TiempoReal;
 
 namespace SIFTC.Application;
 
@@ -10,6 +12,9 @@ public static class DependencyInjection
         {
             config.RegisterServicesFromAssembly(typeof(DependencyInjection).Assembly);
         });
+
+        services.TryAddSingleton(TimeProvider.System);
+        services.AddScoped<EstadoCotizacionesLector>();
 
         return services;
     }

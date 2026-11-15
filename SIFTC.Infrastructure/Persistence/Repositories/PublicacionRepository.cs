@@ -57,6 +57,15 @@ public sealed class PublicacionRepository(ApplicationDbContext dbContext) : IPub
             ],
             cancellationToken);
 
+    public async Task<DateTimeOffset?> ObtenerFechaUltimaPublicacionAsync(
+        CancellationToken cancellationToken = default)
+    {
+        return await dbContext.PublicacionesLote
+            .AsNoTracking()
+            .Where(p => p.Estado == "publicado")
+            .MaxAsync(p => p.FechaDecision, cancellationToken);
+    }
+
     private async Task<Result> EjecutarFuncionAsync(
         string sql,
         IReadOnlyList<(string Nombre, object? Valor)> parametros,

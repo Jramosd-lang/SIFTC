@@ -6,6 +6,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Scalar.AspNetCore;
 using SIFTC.Api.Common;
+using SIFTC.Api.Realtime;
 using SIFTC.Application;
 using SIFTC.Infrastructure;
 using SIFTC.Infrastructure.Authentication;
@@ -16,6 +17,7 @@ var builder = WebApplication.CreateBuilder(args);
 // 1. Conectar la base de datos y repositorios de Clean Architecture
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddTiempoReal(builder.Configuration);
 builder.Services.AddProblemDetails(options =>
 {
     options.CustomizeProblemDetails = context =>
@@ -34,7 +36,8 @@ builder.Services.AddCors(options => options.AddPolicy("Frontend", policy =>
     }
     else
     {
-        policy.WithOrigins(allowedOrigins);
+        // AllowCredentials permite el negotiate de SignalR con su configuración por defecto en el navegador.
+        policy.WithOrigins(allowedOrigins).AllowCredentials();
     }
 
     policy.AllowAnyHeader()
@@ -72,6 +75,18 @@ builder.Services.AddAuthentication(options =>
     // Las respuestas de autenticación usan Problem Details conforme a RFC 9457.
     options.Events = new JwtBearerEvents
     {
+        // Los WebSockets del navegador no envían el header Authorization: el hub recibe el JWT en ?access_token=.
+        OnMessageReceived = context =>
+        {
+            var accessToken = context.Request.Query["access_token"];
+            if (!string.IsNullOrEmpty(accessToken) &&
+                context.HttpContext.Request.Path.StartsWithSegments(CotizacionesHub.Ruta))
+            {
+                context.Token = accessToken;
+            }
+
+            return Task.CompletedTask;
+        },
         OnChallenge = async context =>
         {
             context.HandleResponse();
@@ -214,6 +229,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapTiempoReal();
 app.Run();
 
 static void DescribirSchemas(OpenApiDocument document)

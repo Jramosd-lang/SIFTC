@@ -14,4 +14,7 @@ public interface IEntidadRepository
         CancellationToken cancellationToken = default);
 
     Task<EntidadCotizacion?> GetByIdAsync(Guid idEntidad, CancellationToken cancellationToken = default);
+
+    // Todas las entidades ordenadas por ticker: estado completo del ticker en tiempo real.
+    Task<IReadOnlyList<EntidadCotizacion>> ListarTodasAsync(CancellationToken cancellationToken = default);
 }

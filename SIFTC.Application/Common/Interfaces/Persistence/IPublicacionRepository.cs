@@ -18,4 +18,8 @@ public interface IPublicacionRepository
         Guid idUsuario,
         string comentario,
         CancellationToken cancellationToken = default);
+
+    // Fecha de la última aprobación; versiona el estado que se envía por tiempo real.
+    Task<DateTimeOffset?> ObtenerFechaUltimaPublicacionAsync(
+        CancellationToken cancellationToken = default);
 }
