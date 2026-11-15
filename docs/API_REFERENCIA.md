@@ -241,6 +241,7 @@ Un rol sin permiso siempre recibe `403`, nunca `200` con arreglo vacio.
 | GET | `/api/v1/ic/configuracion` | Administrador | Configuracion vigente del IC. |
 | GET | `/api/v1/ic/configuracion/versiones` | Administrador | Historial de versiones. |
 | POST | `/api/v1/ic/configuracion/versiones` | Administrador | Crear version. |
+| GET | `/api/v1/exportar` | Admin, Data Steward, Analista, Gerente, Auditor (ranking); los seis (serie) | Exportar ranking o serie a CSV. |
 
 ---
 
@@ -667,6 +668,55 @@ Errores:
 - `403`: rol incorrecto.
 - `422`: suma distinta, motivo vacio, dimension inexistente, metrica inexistente, severidad invalida o rango invertido.
 
+### 3.21 GET /api/v1/exportar
+
+- Autenticado. Los roles dependen del parametro `tipo` (Matriz de permisos v1.1 y HU-BE-02).
+- Query:
+
+| Parametro | Tipo | Default | Descripcion |
+|---|---|---|---|
+| `tipo` | `ranking`, `serie` | obligatorio | Recurso a exportar. `series` se acepta como alias de `serie`. |
+| `formato` | `csv` | `csv` | Formato del archivo. Hoy solo `csv`; cualquier otro valor responde `400`. |
+| `sector` | string | vacio | Solo `tipo=ranking`. Nombre exacto del sector. |
+| `dimension` | `Rentabilidad`, `Liquidez`, `Solvencia`, `Crecimiento` | vacio | Solo `tipo=ranking`. |
+| `periodo` | `Diaria`, `Mensual`, `Trimestral` | igual que la consulta original | `ranking` y `serie`. |
+| `orden` | `posicion`, `entidad`, `sector`, `ic`, `variacionPct` | `ic` | Solo `tipo=ranking`. |
+| `dir` | `asc`, `desc` | `desc` | Solo `tipo=ranking`. |
+| `limit` | `1..200` | 50 | Solo `tipo=ranking`. |
+| `offset` | `>= 0` | 0 | Solo `tipo=ranking`. |
+| `idEntidad` | UUID | obligatorio en `tipo=serie` | Entidad de la serie OHLC. |
+
+- CA1: el archivo refleja exactamente los filtros de la consulta original. `tipo=ranking` reutiliza
+  `GET /api/v1/ranking`; `tipo=serie` reutiliza `GET /api/v1/entidades/{id}/ohlc`, con las mismas
+  validaciones y los mismos errores (`400`, `404`, `503`).
+- CA2, permisos:
+
+| `tipo` | Roles con acceso | Sin acceso |
+|---|---|---|
+| `ranking` | Administrador, Data Steward, Analista financiero, Gerente / Directivo, Auditor | Usuario movil: `403` |
+| `serie` | Los seis roles (series OHLC son de sensibilidad Publica) | ninguno |
+
+  Para `Gerente / Directivo`, `posicion` y `cambioPosicion` se exportan vacios (HU-BE-02, decision D1).
+- CA3, bitacora: cada exportacion exitosa registra un evento en `seguridad.auditorias` con
+  `accion=exportacion` y un detalle `key=value` con `recurso`, `tipo`, `formato`, `filas`, `ip`,
+  `estado` y `filtros`. Si el registro falla, la exportacion responde `503` y no se entrega el archivo.
+- Respuesta `200`: `text/csv; charset=utf-8` con BOM UTF-8, separador `;` y decimales con coma
+  (misma convencion que el CSV de carga de `POST /api/v1/cargas`). Cabecera `Content-Disposition`
+  con nombre `ranking_aaaaMMdd_HHmmss.csv` o `serie_<entidad>_<periodo>_aaaaMMdd_HHmmss.csv`.
+- Errores:
+  - `400`: `tipo` invalido, `formato` distinto de `csv` o `idEntidad` ausente en `tipo=serie`.
+  - `401`: sin token.
+  - `403`: rol sin permiso para el `tipo` solicitado.
+  - `503`: microservicio Python no disponible o fallo al registrar en la bitacora.
+
+Ejemplo:
+
+```bash
+curl "https://siftc.onrender.com/api/v1/exportar?tipo=ranking&formato=csv&sector=Energia" \
+  -H "Authorization: Bearer $TOKEN" \
+  -o ranking.csv
+```
+
 ---
 
 ## 4. DTOs
@@ -740,7 +790,7 @@ Estas limitaciones son parte del contrato actual y deben considerarse antes de c
 - La frecuencia y los umbrales de la configuracion del IC se guardan versionados; los pesos ya los usa el ETL. La frecuencia y los umbrales se usaran en las HUs de periodicidad y alertas.
 - `POST /api/v1/parametros/actualizar-umbral` es un placeholder y no persiste cambios.
 - La lectura de matriz cruda y datos financieros detallados para Data Steward y Auditor no tiene endpoint implementado.
-- La auditoria minima y sus endpoints estan pendientes.
+- La auditoria minima esta en curso: `GET /api/v1/exportar` ya registra cada exportacion en `seguridad.auditorias` (Script-22); la consulta de auditoria y sus endpoints siguen pendientes.
 - El filtrado por sensibilidad campo a campo esta pendiente.
 - Las pruebas automatizadas actuales cubren validacion del IC; las pruebas por perfil de todos los endpoints deben integrarse en el repositorio de pruebas acordado.
 

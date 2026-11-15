@@ -29,6 +29,7 @@ public static class DependencyInjection
         services.AddScoped<ICotizacionQueryRepository, CotizacionQueryRepository>();
         services.AddScoped<IMetricaRepository, MetricaRepository>();
         services.AddScoped<IMetricaQueryRepository, MetricaQueryRepository>();
+        services.AddScoped<IAuditoriaRepository, AuditoriaRepository>();
 
         // 3. Microservicio Python (ranking y validación de matriz)
         var pythonBaseUrl = configuration["PythonBackend:BaseUrl"] ?? "https://backendfastapi-b3mt.onrender.com/";
