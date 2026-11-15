@@ -1,6 +1,8 @@
-using MediatR;
+﻿using MediatR;
+using SIFTC.Application.Common;
 using SIFTC.Application.Common.Interfaces.Integrations;
 using SIFTC.Domain.Common;
+using SIFTC.Domain.Enums;
 
 namespace SIFTC.Application.UseCases.Ranking.Queries.ObtenerRanking;
 
@@ -12,7 +14,6 @@ public sealed class ObtenerRankingQueryHandler(IPythonBackendClient pythonBacken
     private const int DesplazamientoPorDefecto = 0;
 
     private static readonly string[] Dimensiones = ["Rentabilidad", "Liquidez", "Solvencia", "Crecimiento"];
-    private static readonly string[] Periodos = ["diario", "mensual", "trimestral"];
     private static readonly string[] Ordenes = ["posicion", "entidad", "sector", "ic", "variacionPct"];
     private static readonly string[] Direcciones = ["asc", "desc"];
 
@@ -27,10 +28,17 @@ public sealed class ObtenerRankingQueryHandler(IPythonBackendClient pythonBacken
             }
         }
 
-        if (!TryNormalizar(request.Periodo, Periodos, "mensual", out var periodo))
+        var frecuencia = Frecuencia.Mensual;
+        if (!string.IsNullOrWhiteSpace(request.Periodo) &&
+            !FrecuenciaParser.TryParse(request.Periodo, out frecuencia))
         {
-            return Result.Failure<RankingResponseDto>(new Error("ranking.periodo.invalid", "El parámetro periodo admite: diario, mensual o trimestral.", ErrorType.Failure));
+            return Result.Failure<RankingResponseDto>(new Error(
+                "ranking.periodo.invalid",
+                "El parámetro periodo admite: Diaria, Mensual o Trimestral.",
+                ErrorType.Failure));
         }
+
+        var periodo = frecuencia.ToString();
 
         if (!TryNormalizar(request.Orden, Ordenes, "ic", out var orden))
         {
@@ -92,3 +100,4 @@ public sealed class ObtenerRankingQueryHandler(IPythonBackendClient pythonBacken
         return false;
     }
 }
+

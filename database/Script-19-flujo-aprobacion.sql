@@ -1,28 +1,28 @@
 -- =====================================================================
--- SIFTC - HU-BE-05: flujo de aprobación por lote
--- Script-19: versión corregida para convivir con Script-18-diccionario.
--- Ejecutar como dueño de los objetos (postgres), después de Script-17
+-- SIFTC - HU-BE-05: flujo de aprobacion por lote
+-- Script-19: version corregida para convivir con Script-18-diccionario.
+-- Ejecutar como dueno de los objetos (postgres), despues de Script-17
 -- y Script-18-ajuste-diccionario.
 --
 -- [CAMBIO] Este script reemplaza a Script-18-flujo-aprobacion.sql.
--- [POR QUÉ] Ya existe Script-18-ajuste-diccionario.sql en el repositorio;
---           duplicar el número dificulta saber el orden de ejecución.
+-- [POR QUE] Ya existe Script-18-ajuste-diccionario.sql en el repositorio;
+--           duplicar el numero dificulta saber el orden de ejecucion.
 --
 -- Resumen de correcciones:
 --   1. Los pendientes ya no se otorgan a rol_powerbi.
---   2. Los lotes rechazados/publicados sin la bandera de publicación
+--   2. Los lotes rechazados/publicados sin la bandera de publicacion
 --      no pueden escribir directamente en fct_*.
 --   3. publicar_lote exige aprobador no nulo, rol Analista financiero,
---      lote exitoso, registros válidos y pendientes reales.
+--      lote exitoso, registros validos y pendientes reales.
 --   4. Se refuerza el CHECK de publicaciones publicadas: exigen usuario.
 --   5. Se corrige NUMERIC de pend_valores_metrica a (20,6).
---   6. Se agrega una bandeja de notificación para rechazos.
+--   6. Se agrega una bandeja de notificacion para rechazos.
 --   7. Se documenta el caso de lotes fallidos y reprocesos.
 -- =====================================================================
 BEGIN;
 
 -- ---------------------------------------------------------------------
--- 1. Estado de publicación de cada lote
+-- 1. Estado de publicacion de cada lote
 -- ---------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS analitica.publicaciones_lote (
     id_lote UUID PRIMARY KEY REFERENCES cruda.lotes_carga (id_lote),
@@ -32,9 +32,9 @@ CREATE TABLE IF NOT EXISTS analitica.publicaciones_lote (
     id_usuario_decision UUID REFERENCES seguridad.usuarios (id_usuario),
     fecha_decision TIMESTAMPTZ,
     comentario VARCHAR(500),
-    -- [CAMBIO] Un lote publicado ahora exige usuario de decisión.
-    -- [POR QUÉ] Evita publicar con id_usuario_decision = NULL y perder
-    --           la trazabilidad de quién aprobó.
+    -- [CAMBIO] Un lote publicado ahora exige usuario de decision.
+    -- [POR QUE] Evita publicar con id_usuario_decision = NULL y perder
+    --           la trazabilidad de quien aprobo.
     CONSTRAINT ck_publicaciones_decision CHECK (
         (estado = 'pendiente'
             AND id_usuario_decision IS NULL
@@ -50,35 +50,35 @@ CREATE TABLE IF NOT EXISTS analitica.publicaciones_lote (
     )
 );
 
--- [CAMBIO] El índice original era redundante sobre id_lote y solo cubría
--- pendientes. Se reemplaza por un índice útil para la bandeja.
--- [POR QUÉ] La API filtrará por estado y ordenará por fecha.
+-- [CAMBIO] El indice original era redundante sobre id_lote y solo cubria
+-- pendientes. Se reemplaza por un indice util para la bandeja.
+-- [POR QUE] La API filtrara por estado y ordenara por fecha.
 CREATE INDEX IF NOT EXISTS ix_publicaciones_estado
     ON analitica.publicaciones_lote (estado, fecha_decision);
 
 -- ---------------------------------------------------------------------
 -- 2. Regularizar publicaciones existentes antes de reforzar el CHECK
 -- ---------------------------------------------------------------------
--- [CAMBIO] Se completan usuarios/fechas de publicaciones históricas.
--- [POR QUÉ] El CHECK nuevo exige id_usuario_decision para 'publicado'.
---           En una migración no existe un aprobador humano; se usa el
---           ejecutor como responsable histórico y se deja comentario.
+-- [CAMBIO] Se completan usuarios/fechas de publicaciones historicas.
+-- [POR QUE] El CHECK nuevo exige id_usuario_decision para 'publicado'.
+--           En una migracion no existe un aprobador humano; se usa el
+--           ejecutor como responsable historico y se deja comentario.
 UPDATE analitica.publicaciones_lote
 SET id_usuario_decision = COALESCE(id_usuario_decision, id_usuario_ejecutor),
     fecha_decision = COALESCE(fecha_decision, now()),
-    comentario = COALESCE(comentario, 'Publicado por migración Script-19')
+    comentario = COALESCE(comentario, 'Publicado por migracion Script-19')
 WHERE estado = 'publicado'
   AND (id_usuario_decision IS NULL OR fecha_decision IS NULL);
 
 UPDATE analitica.publicaciones_lote
 SET id_usuario_decision = COALESCE(id_usuario_decision, id_usuario_ejecutor),
     fecha_decision = COALESCE(fecha_decision, now()),
-    comentario = COALESCE(NULLIF(btrim(comentario), ''), 'Rechazado por migración Script-19')
+    comentario = COALESCE(NULLIF(btrim(comentario), ''), 'Rechazado por migracion Script-19')
 WHERE estado = 'rechazado'
   AND (id_usuario_decision IS NULL OR fecha_decision IS NULL OR comentario IS NULL OR btrim(comentario) = '');
 
--- [CAMBIO] Si la tabla venía del script anterior, se reemplaza el CHECK.
--- [POR QUÉ] El constraint anterior permitía estado 'publicado' sin usuario.
+-- [CAMBIO] Si la tabla venia del script anterior, se reemplaza el CHECK.
+-- [POR QUE] El constraint anterior permitia estado 'publicado' sin usuario.
 ALTER TABLE analitica.publicaciones_lote
     DROP CONSTRAINT IF EXISTS ck_publicaciones_decision;
 ALTER TABLE analitica.publicaciones_lote
@@ -96,9 +96,9 @@ ALTER TABLE analitica.publicaciones_lote
             AND btrim(comentario) <> '')
     );
 
--- [CAMBIO] Los lotes históricos fallidos no se publican.
--- [POR QUÉ] Un lote fallido no tiene cálculo válido; publicarlo dejaría
---           una aprobación sin datos o con datos parciales.
+-- [CAMBIO] Los lotes historicos fallidos no se publican.
+-- [POR QUE] Un lote fallido no tiene calculo valido; publicarlo dejaria
+--           una aprobacion sin datos o con datos parciales.
 INSERT INTO analitica.publicaciones_lote
     (id_lote, estado, id_usuario_ejecutor, id_usuario_decision, fecha_decision, comentario)
 SELECT
@@ -108,8 +108,8 @@ SELECT
     l.id_usuario,
     COALESCE(l.fecha_carga, now()),
     CASE
-        WHEN l.estado_carga = 'Fallido' THEN 'Migración Script-19: lote fallido'
-        ELSE 'Migración Script-19: lote histórico'
+        WHEN l.estado_carga = 'Fallido' THEN 'Migracion Script-19: lote fallido'
+        ELSE 'Migracion Script-19: lote historico'
     END
 FROM cruda.lotes_carga l
 ON CONFLICT (id_lote) DO NOTHING;
@@ -118,9 +118,9 @@ ON CONFLICT (id_lote) DO NOTHING;
 -- 3. Resultados de lotes sin aprobar
 -- ---------------------------------------------------------------------
 -- [CAMBIO] valor pasa de NUMERIC(14,6) a NUMERIC(20,6).
--- [POR QUÉ] Script-18-ajuste-diccionario amplió fct_valores_metrica.valor
---           a NUMERIC(20,6) según el diccionario. El pendiente debe tener
---           la misma capacidad para no rechazar valores válidos.
+-- [POR QUE] Script-18-ajuste-diccionario amplio fct_valores_metrica.valor
+--           a NUMERIC(20,6) segun el diccionario. El pendiente debe tener
+--           la misma capacidad para no rechazar valores validos.
 CREATE TABLE IF NOT EXISTS analitica.pend_valores_metrica (
     id_valor UUID NOT NULL,
     periodo DATE NOT NULL,
@@ -136,7 +136,7 @@ CREATE TABLE IF NOT EXISTS analitica.pend_valores_metrica (
     CHECK (valor_normalizado IS NULL OR valor_normalizado BETWEEN 0 AND 1)
 );
 
--- [CAMBIO] Si la tabla ya existía con la precisión anterior, se amplía.
+-- [CAMBIO] Si la tabla ya existia con la precision anterior, se amplia.
 ALTER TABLE analitica.pend_valores_metrica
     ALTER COLUMN valor TYPE NUMERIC(20,6);
 
@@ -168,11 +168,35 @@ CREATE TABLE IF NOT EXISTS analitica.pend_indices_competitividad (
 );
 
 -- ---------------------------------------------------------------------
--- 4. Bandeja de notificación de rechazos
+-- 4. Vista de bandeja para el backend
+-- ---------------------------------------------------------------------
+-- [CAMBIO] La API necesita nombre de archivo, fecha y conteos del lote,
+-- pero rol_backend no tiene USAGE sobre cruda. Se expone una vista en
+-- analitica en lugar de darle acceso directo a la capa cruda.
+-- [POR QUE] Mantiene la independencia de capas y evita permisos sobre cruda.
+CREATE OR REPLACE VIEW analitica.v_publicaciones_pendientes AS
+SELECT
+    p.id_lote,
+    l.nombre_archivo,
+    l.fecha_carga,
+    l.registros_totales,
+    l.registros_validos,
+    l.estado_carga,
+    p.estado,
+    p.id_usuario_ejecutor,
+    p.id_usuario_decision,
+    p.fecha_decision,
+    p.comentario
+FROM analitica.publicaciones_lote p
+JOIN cruda.lotes_carga l ON l.id_lote = p.id_lote
+WHERE p.estado = 'pendiente';
+
+-- ---------------------------------------------------------------------
+-- 5. Bandeja de notificacion de rechazos
 -- ---------------------------------------------------------------------
 -- [CAMBIO] Se agrega un evento persistente para el rechazo.
--- [POR QUÉ] La HU exige notificar al equipo de Análisis de datos.
---           SQL no envía correos; deja el evento para que la API/worker
+-- [POR QUE] La HU exige notificar al equipo de Analisis de datos.
+--           SQL no envia correos; deja el evento para que la API/worker
 --           lo consuma. No se expone a Power BI.
 CREATE TABLE IF NOT EXISTS analitica.notificaciones_aprobacion (
     id_notificacion UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -189,10 +213,10 @@ CREATE INDEX IF NOT EXISTS ix_notificaciones_pendientes
     WHERE NOT enviada;
 
 -- ---------------------------------------------------------------------
--- 5. Registro de publicación y estado del lote
+-- 6. Registro de publicacion y estado del lote
 -- ---------------------------------------------------------------------
--- [CAMBIO] El trigger solo crea publicación para lotes exitosos.
--- [POR QUÉ] Un lote fallido no debe aparecer como aprobable.
+-- [CAMBIO] El trigger solo crea publicacion para lotes exitosos.
+-- [POR QUE] Un lote fallido no debe aparecer como aprobable.
 DROP TRIGGER IF EXISTS tr_lote_pendiente ON cruda.lotes_carga;
 
 CREATE OR REPLACE FUNCTION analitica.registrar_publicacion_lote()
@@ -220,10 +244,10 @@ CREATE TRIGGER tr_lote_pendiente
     WHEN (NEW.estado_carga = 'Exitoso')
     EXECUTE FUNCTION analitica.registrar_publicacion_lote();
 
--- [CAMBIO] Se agrega una lectura explícita de estado y se elimina el
--- comportamiento "sin publicación = permitir escritura".
--- [POR QUÉ] Si no existe publicación, la escritura debe fallar; no debe
---           asumirse que el lote está publicado.
+-- [CAMBIO] Se agrega una lectura explicita de estado y se elimina el
+-- comportamiento "sin publicacion = permitir escritura".
+-- [POR QUE] Si no existe publicacion, la escritura debe fallar; no debe
+--           asumirse que el lote esta publicado.
 CREATE OR REPLACE FUNCTION analitica.estado_publicacion(p_id_lote UUID)
 RETURNS VARCHAR(10)
 LANGUAGE plpgsql
@@ -239,7 +263,7 @@ BEGIN
     FOR SHARE;
 
     IF NOT FOUND THEN
-        RAISE EXCEPTION 'El lote % no tiene publicación registrada.', p_id_lote
+        RAISE EXCEPTION 'El lote % no tiene publicacion registrada.', p_id_lote
             USING ERRCODE = 'P0002';
     END IF;
 
@@ -248,7 +272,7 @@ END;
 $$;
 
 -- [CAMBIO] Se conserva por compatibilidad, pero ahora falla si no existe
--- publicación y usa estado_publicacion.
+-- publicacion y usa estado_publicacion.
 CREATE OR REPLACE FUNCTION analitica.lote_pendiente(p_id_lote UUID)
 RETURNS boolean
 LANGUAGE plpgsql
@@ -261,14 +285,14 @@ END;
 $$;
 
 -- ---------------------------------------------------------------------
--- 6. Desvío de escrituras del ETL
+-- 7. Desvio de escrituras del ETL
 -- ---------------------------------------------------------------------
 -- [CAMBIO] Se distingue entre:
---   pendiente  -> se desvía a pend_*.
+--   pendiente  -> se desvia a pend_*.
 --   publicado  -> solo se permite durante publicar_lote (bandera).
 --   rechazado  -> se bloquea.
--- [POR QUÉ] El script anterior dejaba pasar cualquier estado distinto de
---           'pendiente'. Un lote rechazado podía publicarse al reprocesarlo.
+-- [POR QUE] El script anterior dejaba pasar cualquier estado distinto de
+--           'pendiente'. Un lote rechazado podia publicarse al reprocesarlo.
 CREATE OR REPLACE FUNCTION analitica.desviar_valor_metrica()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -281,8 +305,8 @@ BEGIN
     v_estado := analitica.estado_publicacion(NEW.id_lote);
 
     IF v_estado = 'pendiente' THEN
-        -- Se conserva para que las cotizaciones sin id_lote sepan a qué
-        -- lote pertenecen. Es una limitación conocida del esquema actual.
+        -- Se conserva para que las cotizaciones sin id_lote sepan a que
+        -- lote pertenecen. Es una limitacion conocida del esquema actual.
         PERFORM set_config('siftc.lote_en_proceso', NEW.id_lote::text, true);
 
         INSERT INTO analitica.pend_valores_metrica (
@@ -305,7 +329,7 @@ BEGIN
         RETURN NEW;
     END IF;
 
-    RAISE EXCEPTION 'El lote % está % y no admite escrituras directas.', NEW.id_lote, v_estado
+    RAISE EXCEPTION 'El lote % esta % y no admite escrituras directas.', NEW.id_lote, v_estado
         USING ERRCODE = 'SI409';
 END;
 $$;
@@ -321,10 +345,10 @@ DECLARE
     v_estado VARCHAR(10);
 BEGIN
     -- [CAMBIO] Sin lote no se permite escribir; antes se publicaba directo.
-    -- [POR QUÉ] fct_cotizaciones no tiene id_lote y el fallback silencioso
-    --           permitía saltarse la aprobación.
+    -- [POR QUE] fct_cotizaciones no tiene id_lote y el fallback silencioso
+    --           permitia saltarse la aprobacion.
     IF v_lote IS NULL THEN
-        RAISE EXCEPTION 'No se pudo determinar el lote de la cotización.'
+        RAISE EXCEPTION 'No se pudo determinar el lote de la cotizacion.'
             USING ERRCODE = 'SI409';
     END IF;
 
@@ -354,7 +378,7 @@ BEGIN
         RETURN NEW;
     END IF;
 
-    RAISE EXCEPTION 'El lote % está % y no admite cotizaciones directas.', v_lote, v_estado
+    RAISE EXCEPTION 'El lote % esta % y no admite cotizaciones directas.', v_lote, v_estado
         USING ERRCODE = 'SI409';
 END;
 $$;
@@ -385,7 +409,7 @@ BEGIN
         RETURN NEW;
     END IF;
 
-    RAISE EXCEPTION 'El lote % está % y no admite índices directos.', NEW.id_lote, v_estado
+    RAISE EXCEPTION 'El lote % esta % y no admite indices directos.', NEW.id_lote, v_estado
         USING ERRCODE = 'SI409';
 END;
 $$;
@@ -406,7 +430,7 @@ CREATE TRIGGER tr_desviar_indice
     FOR EACH ROW EXECUTE FUNCTION analitica.desviar_indice();
 
 -- ---------------------------------------------------------------------
--- 7. Aprobar
+-- 8. Aprobar
 -- ---------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION analitica.publicar_lote(p_id_lote UUID, p_id_aprobador UUID)
 RETURNS void
@@ -422,7 +446,7 @@ DECLARE
     v_tiene_pendientes BOOLEAN;
 BEGIN
     -- [CAMBIO] Validaciones que faltaban.
-    -- [POR QUÉ] Evitan publicar con aprobador nulo, con rol incorrecto,
+    -- [POR QUE] Evitan publicar con aprobador nulo, con rol incorrecto,
     --           con lote fallido o sin datos pendientes.
     IF p_id_aprobador IS NULL THEN
         RAISE EXCEPTION 'El aprobador es obligatorio.' USING ERRCODE = 'SI422';
@@ -451,11 +475,11 @@ BEGIN
     END IF;
 
     IF v_estado <> 'pendiente' THEN
-        RAISE EXCEPTION 'El lote % ya está %.', p_id_lote, v_estado USING ERRCODE = 'SI409';
+        RAISE EXCEPTION 'El lote % ya esta %.', p_id_lote, v_estado USING ERRCODE = 'SI409';
     END IF;
 
     IF v_ejecutor = p_id_aprobador THEN
-        RAISE EXCEPTION 'Quien ejecuta un cálculo no puede aprobarlo.'
+        RAISE EXCEPTION 'Quien ejecuta un calculo no puede aprobarlo.'
             USING ERRCODE = 'SI403';
     END IF;
 
@@ -469,12 +493,12 @@ BEGIN
     END IF;
 
     IF v_estado_carga IS DISTINCT FROM 'Exitoso' THEN
-        RAISE EXCEPTION 'El lote % no está exitoso (estado: %).', p_id_lote, v_estado_carga
+        RAISE EXCEPTION 'El lote % no esta exitoso (estado: %).', p_id_lote, v_estado_carga
             USING ERRCODE = 'SI409';
     END IF;
 
     IF v_registros_validos <= 0 THEN
-        RAISE EXCEPTION 'El lote % no tiene registros válidos.', p_id_lote
+        RAISE EXCEPTION 'El lote % no tiene registros validos.', p_id_lote
             USING ERRCODE = 'SI422';
     END IF;
 
@@ -500,7 +524,7 @@ BEGIN
 
     -- [CAMBIO] Bandera transaccional para que los triggers permitan la
     -- copia desde pend_* a fct_* y bloqueen cualquier otra escritura.
-    -- [POR QUÉ] Antes bastaba con que el estado fuera 'publicado' para
+    -- [POR QUE] Antes bastaba con que el estado fuera 'publicado' para
     --           permitir escrituras, incluso desde un reproceso del ETL.
     PERFORM set_config('siftc.publicando', 'true', true);
     PERFORM set_config('siftc.lote_en_proceso', p_id_lote::text, true);
@@ -549,7 +573,7 @@ END;
 $$;
 
 -- ---------------------------------------------------------------------
--- 8. Rechazar
+-- 9. Rechazar
 -- ---------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION analitica.rechazar_lote(
     p_id_lote UUID,
@@ -595,7 +619,7 @@ BEGIN
     END IF;
 
     IF v_estado <> 'pendiente' THEN
-        RAISE EXCEPTION 'El lote % ya está %.', p_id_lote, v_estado USING ERRCODE = 'SI409';
+        RAISE EXCEPTION 'El lote % ya esta %.', p_id_lote, v_estado USING ERRCODE = 'SI409';
     END IF;
 
     v_mensaje := btrim(p_comentario);
@@ -608,8 +632,8 @@ BEGIN
     WHERE id_lote = p_id_lote;
 
     -- [CAMBIO] Se registra el evento de rechazo para que la API/worker
-    -- notifique al equipo de Análisis de datos.
-    -- [POR QUÉ] La HU exige notificación; SQL solo deja el evento.
+    -- notifique al equipo de Analisis de datos.
+    -- [POR QUE] La HU exige notificacion; SQL solo deja el evento.
     INSERT INTO analitica.notificaciones_aprobacion (
         id_lote, tipo, destinatario_rol, mensaje)
     VALUES (
@@ -618,11 +642,11 @@ END;
 $$;
 
 -- ---------------------------------------------------------------------
--- 9. Permisos
+-- 10. Permisos
 -- ---------------------------------------------------------------------
 -- [CAMBIO] rol_powerbi ya NO recibe SELECT sobre pendientes ni sobre
--- publicaciones en trámite.
--- [POR QUÉ] CA 1: lo pendiente no debe ser visible en canales.
+-- publicaciones en tramite.
+-- [POR QUE] CA 1: lo pendiente no debe ser visible en canales.
 GRANT SELECT ON
     analitica.publicaciones_lote,
     analitica.pend_valores_metrica,
@@ -630,6 +654,9 @@ GRANT SELECT ON
     analitica.pend_indices_competitividad,
     analitica.notificaciones_aprobacion
 TO rol_backend;
+
+-- [CAMBIO] La API lee la bandeja desde la vista, sin acceso a cruda.
+GRANT SELECT ON analitica.v_publicaciones_pendientes TO rol_backend;
 
 GRANT ALL PRIVILEGES ON
     analitica.publicaciones_lote,
@@ -644,7 +671,8 @@ REVOKE SELECT ON
     analitica.pend_valores_metrica,
     analitica.pend_cotizaciones,
     analitica.pend_indices_competitividad,
-    analitica.notificaciones_aprobacion
+    analitica.notificaciones_aprobacion,
+    analitica.v_publicaciones_pendientes
 FROM rol_powerbi;
 
 REVOKE EXECUTE ON FUNCTION analitica.registrar_publicacion_lote() FROM PUBLIC;
@@ -665,23 +693,24 @@ COMMIT;
 -- Notas operativas que no puede resolver este script:
 --
 -- 1. El ETL actual no marca un lote como Fallido si procesar_analitica
---    falla después de insertar el lote. Para cobertura completa, Python
+--    falla despues de insertar el lote. Para cobertura completa, Python
 --    debe actualizar cruda.lotes_carga.estado_carga = 'Fallido' y llamar
---    a una función de cierre/rechazo en el except. Mientras tanto, un
+--    a una funcion de cierre/rechazo en el except. Mientras tanto, un
 --    lote con ETL fallido puede quedar pendiente y luego fallar en
---    publicar_lote si no tiene registros válidos/pendientes.
+--    publicar_lote si no tiene registros validos/pendientes.
 --
 -- 2. fct_cotizaciones no tiene id_lote. Se mantiene la variable
 --    siftc.lote_en_proceso como puente. Si se procesan dos lotes en una
---    misma transacción, o si se usa calcular_cotizaciones() directamente,
---    hay riesgo de ambigüedad. La solución estructural es agregar id_lote
+--    misma transaccion, o si se usa calcular_cotizaciones() directamente,
+--    hay riesgo de ambiguedad. La solucion estructural es agregar id_lote
 --    a fct_cotizaciones.
 --
--- 3. La notificación al equipo de Análisis de datos queda como evento en
+-- 3. La notificacion al equipo de Analisis de datos queda como evento en
 --    analitica.notificaciones_aprobacion. Falta un worker/API que la lea
---    y envíe el correo o mensaje real.
+--    y envie el correo o mensaje real.
 --
--- 4. La matriz de permisos de aplicación debe aplicarse en .NET: el rol
+-- 4. La matriz de permisos de aplicacion debe aplicarse en .NET: el rol
 --    de base de datos rol_backend es compartido y no distingue entre
 --    Administrador, Analista, Auditor, etc.
 -- =====================================================================
+

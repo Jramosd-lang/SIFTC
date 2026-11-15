@@ -25,6 +25,8 @@ public sealed class EntidadesController(IMediator mediator) : BaseApiController
         - size: entero entre 1 y 100. Por defecto 100.
         - sort: codigo, nombre, sector, ic o variacionPct. Por defecto codigo.
         - dir: asc o desc. Por defecto asc.
+        Valores permitidos de sort: codigo, nombre, sector, ic, variacionPct.
+        Valores permitidos de dir: asc, desc.
         El total de registros viaja en la cabecera X-Total-Count.
 
         Respuesta: arreglo de { id, codigo, nombre, sector, ic, variacion, variacionPct }.
@@ -81,6 +83,7 @@ public sealed class EntidadesController(IMediator mediator) : BaseApiController
         Parámetros:
         - id: UUID de la entidad.
         - periodo: Diaria, Mensual o Trimestral. Vacío = Diaria.
+        Valores permitidos de periodo: Diaria, Mensual, Trimestral.
         La serie se devuelve de la fecha más antigua a la más reciente.
 
         Nota: el CSV es mensual. En Diaria y Mensual cada punto tiene apertura=máximo=mínimo=cierre;
