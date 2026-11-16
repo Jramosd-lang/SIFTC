@@ -1,6 +1,6 @@
 -- =====================================================================
 -- SIFTC - HU-AD-10 / HU-MO-05: notificaciones a usuario
--- Script-23: reglas por usuario, tokens FCM y cola de envios.
+-- Script-25: reglas por usuario, tokens FCM y cola de envios.
 -- Ejecutar como dueno de los objetos (postgres), despues de Script-22.
 --
 -- [POR QUE] La HU exige (a) reglas configurables por usuario con canal,
