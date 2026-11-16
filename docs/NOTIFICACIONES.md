@@ -76,6 +76,23 @@ como dueño de los objetos, después de Script-22).
 
 ## 2. Frontend (PWA)
 
+### 2.0 Configuración real del proyecto (ya creada)
+
+```ts
+// firebaseConfig — proyecto: siftc-notificaciones
+export const firebaseConfig = {
+  apiKey: "AIzaSyBFmcJOVDM1mdKCnMi69k4tb-VJYJghU2Y",
+  authDomain: "siftc-notificaciones.firebaseapp.com",
+  projectId: "siftc-notificaciones",
+  storageBucket: "siftc-notificaciones.firebasestorage.app",
+  messagingSenderId: "768771204385",
+  appId: "1:768771204385:web:c05f6b413b6af674404a60"
+};
+```
+
+> `apiKey` es **público por diseño** (no es un secreto): va en el código del frontend.
+> Lo que sí es secreto: la cuenta de servicio (§1.6) y la clave privada VAPID.
+
 ```bash
 npm install firebase
 ```
