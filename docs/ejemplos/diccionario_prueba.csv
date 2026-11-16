@@ -1,0 +1,14 @@
+codigo;tipo;nombre;definicion;sinonimos;formula;unidad;clasificacion
+RNT-01;metrica;ROE;Rentabilidad sobre el patrimonio;rentabilidad del patrimonio, retorno sobre patrimonio;utilidad_neta / patrimonio;%;Interno
+RNT-02;metrica;ROA;Rentabilidad sobre los activos;rentabilidad sobre activos;utilidad_neta / activos_totales;%;Interno
+RNT-03;metrica;ROCE;Retorno sobre el capital empleado;retorno sobre capital empleado;EBIT / capital_empleado;%;Confidencial
+RNT-04;metrica;Margen neto;Utilidad sobre ingresos;margen, margen de utilidad;utilidad_neta / ingresos;%;Público
+RNT-05;metrica;Beta;Sensibilidad de la acción frente al mercado;beta, factor beta;covarianza / varianza;unidad;Interno
+RNT-06;metrica;PER;Precio sobre ganancias;ratio precio ganancias, valoración;precio / utilidad_por_accion;x;Público
+DAT-01;dato;utilidad_neta;Utilidad neta del periodo;ganancia neta, utilidad del ejercicio;;;Interno
+DAT-02;dato;patrimonio;Patrimonio contable de la empresa;capital contable, equity;;;Interno
+DAT-03;dato;ingresos;Ingresos operacionales del periodo;ventas, revenue;;;Público
+DAT-04;dato;deuda_financiera;Deuda financiera a corto y largo plazo;endeudamiento financiero;;;Confidencial
+GLO-IC;termino;IC;Índice de competitividad;índice comp, IC;;;Público
+GLO-IFRS;termino;IFRS;Normas internacionales de reporte financiero;normas ifrs;;;Interno
+GLO-COV;termino;Cobertura;Ratio de cobertura de intereses;interest coverage;;;Restringido

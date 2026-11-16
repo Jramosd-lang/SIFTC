@@ -40,6 +40,9 @@ public static class RolesSistema
 
     public const string AuditoriaLectura = Administrador + "," + Auditor;
 
+    // HU-DD-08: carga del diccionario (Administrador y Data Steward).
+    public const string DiccionarioCarga = Administrador + "," + DataSteward;
+
     // Matriz financiera cruda (Confidencial). Según la matriz: Data Steward y Auditor leen.
     public const string MatrizCrudaLectura = DataSteward + "," + Auditor;
 }

@@ -32,6 +32,7 @@ public static class DependencyInjection
         services.AddScoped<ICotizacionQueryRepository, CotizacionQueryRepository>();
         services.AddScoped<IMetricaRepository, MetricaRepository>();
         services.AddScoped<IMetricaQueryRepository, MetricaQueryRepository>();
+        services.AddScoped<IDiccionarioRepository, DiccionarioRepository>();
         services.AddScoped<IAuditoriaRepository, AuditoriaRepository>();
 
         // 3. Microservicio Python (ranking y validación de matriz)

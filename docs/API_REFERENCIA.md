@@ -242,6 +242,9 @@ Un rol sin permiso siempre recibe `403`, nunca `200` con arreglo vacio.
 | GET | `/api/v1/ic/configuracion/versiones` | Administrador | Historial de versiones. |
 | POST | `/api/v1/ic/configuracion/versiones` | Administrador | Crear version. |
 | GET | `/api/v1/exportar` | Admin, Data Steward, Analista, Gerente, Auditor (ranking); los seis (serie) | Exportar ranking o serie a CSV. |
+| POST | `/api/v1/diccionario/cargar` | Administrador, Data Steward | Cargar `diccionario.csv` (reemplaza la tabla). |
+| GET | `/api/v1/diccionario` | Todos (filtro por clasificacion) | Buscar terminos del diccionario. |
+| GET | `/api/v1/diccionario/{codigo}` | Todos (filtro por clasificacion) | Ficha completa; `404` si no existe o no le corresponde. |
 
 ---
 
@@ -717,6 +720,105 @@ curl "https://siftc.onrender.com/api/v1/exportar?tipo=ranking&formato=csv&sector
   -o ranking.csv
 ```
 
+### 3.22 POST /api/v1/diccionario/cargar
+
+- HU-DD-08. Roles: **Administrador** y **Data Steward** (demas: `403`).
+- `multipart/form-data` con el archivo en el campo `file`.
+- Formato de `diccionario.csv` (seccion 2.1 de la HU): separador `;`, UTF-8, fila de
+  encabezado con las 8 columnas `codigo`, `tipo`, `nombre`, `definicion`, `sinonimos`,
+  `formula`, `unidad`, `clasificacion`. El orden no importa y las columnas de mas se ignoran.
+- El cargue **reemplaza el contenido completo** de `analitica.diccionario`: la tabla queda
+  igual al Excel de Frell. Si el archivo no es valido, se rechaza **sin modificar la tabla**.
+- Valores admitidos: `tipo` = `dato`, `metrica`, `termino`; `clasificacion` = `Publico`,
+  `Interno`, `Confidencial`, `Restringido` (se normaliza a la forma canonica).
+- Respuesta `200`:
+
+```json
+{ "registros": 13 }
+```
+
+- Errores:
+  - `401`: sin token. `403`: rol distinto de Administrador / Data Steward.
+  - `422`: `diccionario.file.required` (sin archivo), `diccionario.csv.vacio`,
+    `diccionario.columnas.faltan` (faltan columnas del encabezado, enumera cuáles),
+    `diccionario.fila.invalida` (`Fila N: ...` con el motivo), `diccionario.codigo.duplicado`,
+    `diccionario.csv.ilegible`.
+  - `503`: `diccionario.carga.error` (fallo al reemplazar la tabla).
+
+```bash
+curl "https://siftc.onrender.com/api/v1/diccionario/cargar" \
+  -H "Authorization: Bearer $TOKEN" \
+  -F "file=@diccionario_prueba.csv;type=text/csv"
+```
+
+### 3.23 GET /api/v1/diccionario
+
+- HU-DD-08. Cualquier usuario con sesion (los seis roles).
+- Query:
+
+| Parametro | Tipo | Default | Descripcion |
+|---|---|---|---|
+| `buscar` | string | obligatorio | Texto a buscar en nombre, codigo o sinonimo. |
+| `tipo` | `dato`, `metrica`, `termino` | vacio | Filtro opcional por tipo. |
+
+- Busqueda sin distinguir mayusculas (`ILIKE` en PostgreSQL) sobre `nombre`, `codigo` y
+  `sinonimos`; devuelve como maximo **20** resultados ordenados por nombre.
+- Filtro por clasificacion de sensibilidad (seccion 2.4 de la HU):
+
+| Clasificacion | Roles que la ven |
+|---|---|
+| `Publico` | Los seis roles |
+| `Interno` | Los seis roles (cualquier usuario con sesion) |
+| `Confidencial` | Administrador, Data Steward, Analista financiero, Auditor |
+| `Restringido` | **Nadie** desde la API (nunca aparece) |
+
+- Respuesta `200` (arreglo):
+
+```json
+[
+  { "codigo": "RNT-01", "tipo": "metrica", "nombre": "ROE",
+    "definicion": "Rentabilidad sobre el patrimonio" },
+  { "codigo": "RNT-02", "tipo": "metrica", "nombre": "ROA",
+    "definicion": "Rentabilidad sobre los activos" }
+]
+```
+
+- Errores: `401` sin token; `422` `diccionario.buscar.required` o `diccionario.tipo.invalid`.
+- Rendimiento: menos de 2 s por busqueda (CA2; indice `ix_diccionario_nombre`).
+
+```bash
+curl "https://siftc.onrender.com/api/v1/diccionario?buscar=ROE&tipo=metrica" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+### 3.24 GET /api/v1/diccionario/{codigo}
+
+- HU-DD-08. Cualquier usuario con sesion; la ficha se filtra por la misma tabla de la 3.23.
+- Respuesta `200` (`sinonimos` viaja como arreglo; `formula` y `unidad` en `null` si estan vacios):
+
+```json
+{
+  "codigo": "RNT-01",
+  "tipo": "metrica",
+  "nombre": "ROE",
+  "definicion": "Rentabilidad sobre el patrimonio",
+  "formula": "utilidad_neta / patrimonio",
+  "unidad": "%",
+  "sinonimos": ["rentabilidad del patrimonio"],
+  "clasificacion": "Interno"
+}
+```
+
+- Respuesta `404` cuando el codigo no existe **y** cuando el rol no puede ver la
+  clasificacion. Es el mismo `404` (mismo `code` `diccionario.no.encontrado` y mismo
+  mensaje) en ambos casos a proposito: asi nadie puede enumerar los terminos
+  Confidenciales o Restringidos que no le corresponden.
+
+```bash
+curl "https://siftc.onrender.com/api/v1/diccionario/RNT-01" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
 ---
 
 ## 4. DTOs
@@ -777,6 +879,37 @@ Ver ejemplo de `/api/v1/aprobaciones`.
 ### ConfiguracionIcDto
 
 Ver ejemplo de `/api/v1/ic/configuracion`.
+
+### DiccionarioResultadoDto (item de GET /api/v1/diccionario)
+
+| Campo | Tipo | Descripcion |
+|---|---|---|
+| `codigo` | string | `RNT-01`, `utilidad_neta`, `GLO-IC`. |
+| `tipo` | `dato`, `metrica`, `termino` | Tipo de fila. |
+| `nombre` | string | Nombre o termino. |
+| `definicion` | string | Definicion corta. |
+
+### DiccionarioFichaDto (GET /api/v1/diccionario/{codigo})
+
+| Campo | Tipo | Descripcion |
+|---|---|---|
+| `codigo` | string | Llave primaria de la ficha. |
+| `tipo` | `dato`, `metrica`, `termino` | Tipo de fila. |
+| `nombre` | string | Nombre o termino. |
+| `definicion` | string | Definicion completa. |
+| `formula` | string o null | Solo metricas. |
+| `unidad` | string o null | Solo metricas. |
+| `sinonimos` | string[] | Sinonimos partidos por coma (vacio si no hay). |
+| `clasificacion` | `Publico`, `Interno`, `Confidencial`, `Restringido` | Sensibilidad (HU-DD-06). |
+
+### CargaDiccionarioResponseDto (POST /api/v1/diccionario/cargar)
+
+| Campo | Tipo | Descripcion |
+|---|---|---|
+| `registros` | int | Filas insertadas (el total del archivo valido). |
+
+Ejemplos de CSV: `docs/ejemplos/diccionario_prueba.csv` (13 filas, formato exacto) y
+`docs/ejemplos/diccionario_columnas_faltantes.csv` (rechazado con `422`).
 
 ---
 

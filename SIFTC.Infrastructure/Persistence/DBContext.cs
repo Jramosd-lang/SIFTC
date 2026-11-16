@@ -22,6 +22,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Auditoria> Auditorias => Set<Auditoria>();
     public DbSet<PublicacionLote> PublicacionesLote => Set<PublicacionLote>();
     public DbSet<PublicacionPendiente> PublicacionesPendientes => Set<PublicacionPendiente>();
+    public DbSet<Diccionario> Diccionario => Set<Diccionario>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
