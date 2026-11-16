@@ -1,4 +1,6 @@
+using Microsoft.EntityFrameworkCore;
 using SIFTC.Application.Common.Interfaces.Persistence;
+using SIFTC.Application.UseCases.Auditoria;
 using SIFTC.Domain.Entities;
 
 namespace SIFTC.Infrastructure.Persistence.Repositories;
@@ -9,5 +11,17 @@ public sealed class AuditoriaRepository(ApplicationDbContext dbContext) : IAudit
     {
         await dbContext.Auditorias.AddAsync(auditoria, cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<AuditoriaDto>> ListarAsync(
+        int limit,
+        CancellationToken cancellationToken = default)
+    {
+        return await dbContext.Auditorias
+            .AsNoTracking()
+            .OrderByDescending(a => a.FechaEvento)
+            .Take(limit)
+            .Select(a => new AuditoriaDto(a.IdBitacora, a.Accion, a.Detalle, a.FechaEvento, a.IdUsuario))
+            .ToListAsync(cancellationToken);
     }
 }

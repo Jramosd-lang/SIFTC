@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Headers;
+using Microsoft.Extensions.Configuration;
 using System.Text.Json;
 using SIFTC.Application.Common.Interfaces.Integrations;
 using SIFTC.Application.UseCases.Matriz;
@@ -8,9 +9,12 @@ using SIFTC.Domain.Common;
 
 namespace SIFTC.Infrastructure.Integrations;
 
-public sealed class PythonBackendClient(HttpClient httpClient) : IPythonBackendClient
+public sealed class PythonBackendClient(HttpClient httpClient, IConfiguration configuration) : IPythonBackendClient
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+
+    // Token de servicio para el microservicio de Python. Si está configurado, reemplaza el token del usuario.
+    private readonly string? _tokenServicio = configuration["PythonBackend:ServiceToken"];
 
     public async Task<Result<RankingResponseDto>> GetRankingAsync(
         RankingQuery query,
@@ -127,7 +131,7 @@ public sealed class PythonBackendClient(HttpClient httpClient) : IPythonBackendC
             parametros.Add($"dimension={Uri.EscapeDataString(query.Dimension)}");
         }
 
-        parametros.Add($"periodo={Uri.EscapeDataString(query.Periodo)}");
+        parametros.Add($"periodo={Uri.EscapeDataString(PeriodoPython(query.Periodo))}");
         parametros.Add($"orden={Uri.EscapeDataString(query.Orden)}");
         parametros.Add($"dir={Uri.EscapeDataString(query.Dir)}");
         parametros.Add($"limit={query.Limit}");
@@ -135,6 +139,15 @@ public sealed class PythonBackendClient(HttpClient httpClient) : IPythonBackendC
 
         return "api/v1/ranking?" + string.Join("&", parametros);
     }
+
+    // La API usa minúsculas (diario, mensual, trimestral). El microservicio exige sus valores exactos.
+    private static string PeriodoPython(string periodo) => periodo.ToLowerInvariant() switch
+    {
+        "diario" => "Diaria",
+        "mensual" => "Mensual",
+        "trimestral" => "Trimestral",
+        _ => periodo
+    };
 
     private static (string? Mensaje, IReadOnlyList<JsonElement> Errores) ParsearErrores(JsonElement root)
     {
@@ -170,8 +183,14 @@ public sealed class PythonBackendClient(HttpClient httpClient) : IPythonBackendC
         return ("El CSV contiene errores de validación.", []);
     }
 
-    private static void AgregarAutorizacion(HttpRequestMessage request, string? authorization)
+    private void AgregarAutorizacion(HttpRequestMessage request, string? authorization)
     {
+        if (!string.IsNullOrWhiteSpace(_tokenServicio))
+        {
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _tokenServicio.Trim());
+            return;
+        }
+
         if (!string.IsNullOrWhiteSpace(authorization))
         {
             request.Headers.TryAddWithoutValidation("Authorization", authorization.Trim());

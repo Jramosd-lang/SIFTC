@@ -357,3 +357,5 @@ static void Describir(
         }
     }
 }
+
+public partial class Program { }

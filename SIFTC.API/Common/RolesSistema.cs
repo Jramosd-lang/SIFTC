@@ -35,4 +35,11 @@ public static class RolesSistema
     public const string AprobacionesDecision = AnalistaFinanciero;
 
     public const string Parametros = AnalistaFinanciero + "," + Administrador;
+
+    public const string ParametrosLectura = Parametros + "," + Auditor;
+
+    public const string AuditoriaLectura = Administrador + "," + Auditor;
+
+    // Matriz financiera cruda (Confidencial). Según la matriz: Data Steward y Auditor leen.
+    public const string MatrizCrudaLectura = DataSteward + "," + Auditor;
 }

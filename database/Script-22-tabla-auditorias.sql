@@ -48,6 +48,9 @@ CREATE INDEX IF NOT EXISTS ix_auditorias_fecha
 
 -- El rol compartido por .NET y Python opera la bitacora en seguridad
 -- (docs/INTEGRACION_BACKENDS_SPRINT2.md).
-GRANT SELECT, INSERT, UPDATE, DELETE ON seguridad.auditorias TO rol_backend;
+-- Matriz de permisos SIFTC v1.1: la bitacora es de solo lectura + escritura
+-- de eventos. UPDATE y DELETE quedan prohibidos para que el registro sea
+-- inmutable (nadie puede alterar ni borrar lo que ya se auditoria).
+GRANT SELECT, INSERT ON seguridad.auditorias TO rol_backend;
 
 COMMIT;

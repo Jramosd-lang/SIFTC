@@ -24,6 +24,7 @@ public sealed class TiempoRealCotizacionesTests
     private readonly Mock<IPublicacionRepository> _publicaciones = new();
     private readonly Mock<IEntidadRepository> _entidades = new();
     private readonly Mock<ICotizacionesNotificador> _notificador = new();
+    private readonly Mock<IAuditoriaRepository> _auditoria = new();
 
     public TiempoRealCotizacionesTests()
     {
@@ -150,7 +151,7 @@ public sealed class TiempoRealCotizacionesTests
             .Setup(r => r.AprobarAsync(idLote, idAprobador, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success());
 
-        var handler = new AprobarPublicacionCommandHandler(_publicaciones.Object, publisher.Object);
+        var handler = new AprobarPublicacionCommandHandler(_publicaciones.Object, _auditoria.Object, publisher.Object);
         var result = await handler.Handle(new AprobarPublicacionCommand(idLote, idAprobador), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
@@ -167,7 +168,7 @@ public sealed class TiempoRealCotizacionesTests
             .Setup(r => r.AprobarAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure(new Error("aprobacion.conflict", "Ya decidido.", ErrorType.Conflict)));
 
-        var handler = new AprobarPublicacionCommandHandler(_publicaciones.Object, publisher.Object);
+        var handler = new AprobarPublicacionCommandHandler(_publicaciones.Object, _auditoria.Object, publisher.Object);
         var result = await handler.Handle(new AprobarPublicacionCommand(Guid.NewGuid(), Guid.NewGuid()), CancellationToken.None);
 
         Assert.True(result.IsFailure);
@@ -179,7 +180,7 @@ public sealed class TiempoRealCotizacionesTests
     {
         var publisher = new Mock<IPublisher>();
 
-        var handler = new AprobarPublicacionCommandHandler(_publicaciones.Object, publisher.Object);
+        var handler = new AprobarPublicacionCommandHandler(_publicaciones.Object, _auditoria.Object, publisher.Object);
         var result = await handler.Handle(new AprobarPublicacionCommand(Guid.Empty, Guid.NewGuid()), CancellationToken.None);
 
         Assert.Equal(ErrorType.Validation, result.Error.Type);

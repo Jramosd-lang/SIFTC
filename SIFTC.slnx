@@ -11,4 +11,7 @@
   </Folder>
   <Project Path="SIFTC.LoadTests/SIFTC.LoadTests.csproj" />
   <Project Path="SIFTC.Tests/SIFTC.Tests.csproj" />
+  <Folder Name="/tests/">
+    <Project Path="tests/SIFTC.Tests.Permisos/SIFTC.Tests.Permisos.csproj" />
+  </Folder>
 </Solution>

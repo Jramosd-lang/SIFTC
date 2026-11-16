@@ -9,6 +9,7 @@ using SIFTC.Application.UseCases.Ranking;
 using SIFTC.Application.UseCases.Ranking.Queries.ObtenerRanking;
 using SIFTC.Domain.Common;
 using SIFTC.Domain.Entities;
+using AuditoriaEntidad = SIFTC.Domain.Entities.Auditoria;
 
 namespace SIFTC.Application.UseCases.Exportar.Queries.ExportarDatos;
 
@@ -174,7 +175,7 @@ public sealed class ExportarQueryHandler(
         ExportFileDto archivo,
         CancellationToken cancellationToken)
     {
-        var auditoria = Auditoria.Create(
+        var auditoria = AuditoriaEntidad.Create(
             AccionExportacion,
             ConstruirDetalle(request.Ip, tipo, archivo.TotalFilas, filtros),
             request.IdUsuario);
