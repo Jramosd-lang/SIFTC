@@ -9,8 +9,32 @@ usuario y reintentos registrados.
 | **CA2** | Reglas configurables por usuario (canal, entidades y umbral) | Tabla `seguridad.notificaciones_reglas` + CRUD en la API |
 | **CA3** | Reintentos y fallos registrados | `estado`, `intentos`, `max_intentos`, `ultimo_error` en `seguridad.notificaciones_envios` (+ evento en `seguridad.auditorias` con `accion=notificacion`) |
 
-Base de datos: **`database/Script-23-notificaciones-usuario.sql`** (idempotente, ejecutar
-como dueño de los objetos, después de Script-22).
+Base de datos: **`database/Script-25-notificaciones-usuario.sql`** (idempotente, ejecutar
+como dueño de los objetos, después de Script-22). **Ya aplicado en local y en Neon.**
+
+---
+
+## 0. Plan de trabajo (para el compañero)
+
+**Ya está hecho (no repetir):** proyecto Firebase `siftc-notificaciones` con app web
+registrada (§2.0), las 3 tablas creadas y con GRANT en local y Neon, este documento con
+el contrato y el checklist.
+
+**Pendiente de quien tenga la consola Firebase / Render** (bloquea el avance, pedirlo al inicio):
+- `Firebase__CredentialsJson` (§1.6/§4) → sin esto FCM no envía.
+- Credenciales SMTP reales (§4) → sin esto el correo no envía.
+- Push web: clave VAPID (§1.3) y `google-services.json` (§1.4) cuando el front/móvil los pidan.
+
+**Tareas en orden:**
+
+| # | Tarea | CA | Detalle |
+|---|---|---|---|
+| 1 | Configurar backend | — | NuGet `FirebaseAdmin` + `MailKit`; leer variables §4; `FirebaseApp.Create(...)` al arrancar (§3); mapeo EF de las 3 tablas |
+| 2 | CRUD de reglas | **CA2** | Endpoints de §5: crear/listar/borrar regla **propia**; validar `canal`, `umbral >= 0`, `idEntidad` opcional (= todas) |
+| 3 | Registro de tokens | — | `POST/DELETE /notificaciones/tokens` para que el front entregue su `token_fcm` |
+| 4 | Worker de envío | **CA1** | `BackgroundService` con intervalo ≤ 10 s; toma `estado='pendiente'`, envía por el canal, marca `enviado` + `fecha_envio`; FCM con `AndroidConfig.Priority = High` |
+| 5 | Reintentos y fallos | **CA3** | Error transitorio → `intentos+1`, `ultimo_error`, reintentar; agota `max_intentos` → `fallido`; FCM `UNREGISTERED` → `tokens.activo=false` (sin reintentar); cada envío genera evento en `seguridad.auditorias` (`accion=notificacion`, política estricta: falla registro → 503) |
+| 6 | Verificación | CA1-3 | Correr el checklist §7 y marcar las 3 casillas del tablero |
 
 ---
 
