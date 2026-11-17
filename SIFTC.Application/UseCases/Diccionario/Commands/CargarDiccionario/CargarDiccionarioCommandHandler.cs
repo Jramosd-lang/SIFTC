@@ -78,8 +78,7 @@ public sealed class CargarDiccionarioCommandHandler(IDiccionarioRepository repos
         }
 
         var indice = ColumnasEsperadas
-            .Select((columna, i) => (columna, i))
-            .ToDictionary(x => x.columna, x => x.i);
+            .ToDictionary(c => c, c => Array.IndexOf(encabezado, c));
 
         var datos = new List<DiccionarioEntidad>();
         var codigos = new HashSet<string>(StringComparer.Ordinal);

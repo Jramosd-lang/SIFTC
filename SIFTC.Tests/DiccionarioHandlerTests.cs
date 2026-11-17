@@ -61,6 +61,34 @@ public sealed class DiccionarioHandlerTests
     }
 
     [Fact]
+    public async Task CAC1_un_csv_con_columnas_en_distinto_orden_y_extras_se_procesa_correctamente()
+    {
+        _repositorio
+            .Setup(r => r.ReemplazarTodoAsync(It.IsAny<IReadOnlyList<DiccionarioEntidad>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(1);
+
+        var encabezadoDesordenado = "columna_extra;clasificacion;unidad;formula;sinonimos;definicion;nombre;tipo;codigo";
+        var filaDesordenada = "ignorado;Interno;%;utilidad_neta / patrimonio;rentabilidad del patrimonio;Rentabilidad sobre el patrimonio;ROE;metrica;RNT-01";
+        var csv = $"{encabezadoDesordenado}\n{filaDesordenada}";
+
+        var result = await CrearCargador().Handle(
+            new CargarDiccionarioCommand(Csv(csv)), CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(1, result.Value.Registros);
+        _repositorio.Verify(
+            r => r.ReemplazarTodoAsync(
+                It.Is<IReadOnlyList<DiccionarioEntidad>>(l =>
+                    l.Count == 1 &&
+                    l[0].Codigo == "RNT-01" &&
+                    l[0].Tipo == "metrica" &&
+                    l[0].Nombre == "ROE" &&
+                    l[0].Clasificacion == "Interno"),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
     public async Task CAC1_un_csv_sin_columnas_se_rechaza_sin_tocar_la_tabla()
     {
         // Falta la columna 'clasificacion' (y la de fórmula viene mal nombrada).
