@@ -4,9 +4,11 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SIFTC.Application.Common.Interfaces;
 using SIFTC.Application.Common.Interfaces.Integrations;
+using SIFTC.Application.Common.Interfaces.Notificaciones;
 using SIFTC.Application.Common.Interfaces.Persistence;
 using SIFTC.Infrastructure.Authentication;
 using SIFTC.Infrastructure.Integrations;
+using SIFTC.Infrastructure.Notifications;
 using SIFTC.Infrastructure.Persistence;
 using SIFTC.Infrastructure.Persistence.Repositories;
 
@@ -34,6 +36,13 @@ public static class DependencyInjection
         services.AddScoped<IMetricaQueryRepository, MetricaQueryRepository>();
         services.AddScoped<IDiccionarioRepository, DiccionarioRepository>();
         services.AddScoped<IAuditoriaRepository, AuditoriaRepository>();
+        services.AddScoped<INotificacionRepository, NotificacionRepository>();
+
+        // 2.1 Notificaciones: correo SMTP + push Firebase (HU-AD-10 / HU-MO-05).
+        services.Configure<SmtpOptions>(configuration.GetSection(SmtpOptions.SectionName));
+        services.Configure<FirebaseOptions>(configuration.GetSection(FirebaseOptions.SectionName));
+        services.AddSingleton<ICorreoNotificador, SmtpCorreoNotificador>();
+        services.AddSingleton<IPushNotificador, FirebasePushNotificador>();
 
         // 3. Microservicio Python (ranking y validación de matriz)
         var pythonBaseUrl = configuration["PythonBackend:BaseUrl"] ?? "https://backendfastapi-b3mt.onrender.com/";

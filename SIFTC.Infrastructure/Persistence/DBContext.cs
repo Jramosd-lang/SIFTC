@@ -23,6 +23,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<PublicacionLote> PublicacionesLote => Set<PublicacionLote>();
     public DbSet<PublicacionPendiente> PublicacionesPendientes => Set<PublicacionPendiente>();
     public DbSet<Diccionario> Diccionario => Set<Diccionario>();
+    public DbSet<NotificacionRegla> NotificacionesReglas => Set<NotificacionRegla>();
+    public DbSet<NotificacionToken> NotificacionesTokens => Set<NotificacionToken>();
+    public DbSet<NotificacionEnvio> NotificacionesEnvios => Set<NotificacionEnvio>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

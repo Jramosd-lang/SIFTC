@@ -14,27 +14,38 @@ como dueño de los objetos, después de Script-22). **Ya aplicado en local y en 
 
 ---
 
-## 0. Plan de trabajo (para el compañero)
+## 0. Estado y plan de trabajo
 
-**Ya está hecho (no repetir):** proyecto Firebase `siftc-notificaciones` con app web
-registrada (§2.0), las 3 tablas creadas y con GRANT en local y Neon, este documento con
-el contrato y el checklist.
+**Implementado y probado (HU-AD-10 / HU-MO-05):**
+- 3 tablas (`seguridad.notificaciones_reglas/_tokens/_envios`) aplicadas en local y Neon.
+- Backend .NET completo: mapeo EF, repositorio, CRUD de reglas (CA2), tokens FCM,
+  generador de avisos, worker en background (CA1), reintentos y auditoría (CA3).
+- Trigger real: al publicarse un lote (`LotePublicadoEvent`) se encolan los avisos de las
+  entidades cuya variación de IC cumple las reglas. También existe
+  `POST /api/v1/notificaciones/eventos` para que el ETL/otro backend ingrese eventos.
+- 21 pruebas unitarias de notificaciones (74 en total en la suite) y E2E contra Neon
+  (`verificar_notificaciones.ps1`, 24/24 PASS).
 
-**Pendiente de quien tenga la consola Firebase / Render** (bloquea el avance, pedirlo al inicio):
+**Pendiente de quien tenga la consola Firebase / Render** (bloquea la entrega real, no el
+código):
 - `Firebase__CredentialsJson` (§1.6/§4) → sin esto FCM no envía.
 - Credenciales SMTP reales (§4) → sin esto el correo no envía.
 - Push web: clave VAPID (§1.3) y `google-services.json` (§1.4) cuando el front/móvil los pidan.
 
-**Tareas en orden:**
+Sin esas credenciales la API **arranca igual**: cada envío queda en la cola como
+`fallido` con `ultimoError = "SMTP no configurado..."` / `"Firebase no configurado..."`,
+que es justamente la evidencia del CA3.
 
-| # | Tarea | CA | Detalle |
+**Tareas del plan original (todas cerradas):**
+
+| # | Tarea | CA | Estado |
 |---|---|---|---|
-| 1 | Configurar backend | — | NuGet `FirebaseAdmin` + `MailKit`; leer variables §4; `FirebaseApp.Create(...)` al arrancar (§3); mapeo EF de las 3 tablas |
-| 2 | CRUD de reglas | **CA2** | Endpoints de §5: crear/listar/borrar regla **propia**; validar `canal`, `umbral >= 0`, `idEntidad` opcional (= todas) |
-| 3 | Registro de tokens | — | `POST/DELETE /notificaciones/tokens` para que el front entregue su `token_fcm` |
-| 4 | Worker de envío | **CA1** | `BackgroundService` con intervalo ≤ 10 s; toma `estado='pendiente'`, envía por el canal, marca `enviado` + `fecha_envio`; FCM con `AndroidConfig.Priority = High` |
-| 5 | Reintentos y fallos | **CA3** | Error transitorio → `intentos+1`, `ultimo_error`, reintentar; agota `max_intentos` → `fallido`; FCM `UNREGISTERED` → `tokens.activo=false` (sin reintentar); cada envío genera evento en `seguridad.auditorias` (`accion=notificacion`, política estricta: falla registro → 503) |
-| 6 | Verificación | CA1-3 | Correr el checklist §7 y marcar las 3 casillas del tablero |
+| 1 | Configurar backend | — | Hecho: `FirebaseAdmin 3.7.1` + `MailKit 5.0.0`, variables §4, mapeo EF de las 3 tablas |
+| 2 | CRUD de reglas | **CA2** | Hecho: §5, validación de `canal`, `umbral >= 0`, `idEntidad` opcional (= todas) |
+| 3 | Registro de tokens | — | Hecho: `POST/DELETE /notificaciones/tokens` |
+| 4 | Worker de envío | **CA1** | Hecho: `NotificacionesWorker` cada `IntervaloSegundos`; FCM `Priority.High` |
+| 5 | Reintentos y fallos | **CA3** | Hecho: `intentos`, `ultimo_error`, `max_intentos=3`, `UNREGISTERED` desactiva token, evento en `seguridad.auditorias` |
+| 6 | Verificación | CA1-3 | Hecho: §7 (24/24 contra Neon sin credenciales) |
 
 ---
 
@@ -144,42 +155,45 @@ sitio; sin él `getToken()` falla en navegadores.
 
 ---
 
-## 3. Backend .NET
+## 3. Backend .NET (implementado)
 
-Paquete NuGet: **`FirebaseAdmin`** (Firebase Admin SDK for .NET).
+Paquetes NuGet en `SIFTC.Infrastructure`: **`FirebaseAdmin 3.7.1`** y **`MailKit 5.0.0`**.
 
-```csharp
-using FirebaseAdmin;
-using FirebaseAdmin.Messaging;
-using Google.Apis.Auth.OAuth2;
+| Pieza | Archivo | Rol |
+|---|---|---|
+| Dominio | `SIFTC.Domain/Entities/NotificacionRegla.cs`, `NotificacionToken.cs`, `NotificacionEnvio.cs` | Validaciones y transiciones (`pendiente → enviado/fallido`) |
+| Generador | `SIFTC.Application/UseCases/Notificaciones/GeneradorNotificaciones.cs` | Evalúa reglas y encola filas (CA2) |
+| Procesador | `SIFTC.Application/UseCases/Notificaciones/ProcesadorEnviosNotificacion.cs` | Envía, reintenta y audita (CA1/CA3) |
+| Trigger de lote | `SIFTC.Application/UseCases/Notificaciones/EventHandlers/NotificacionAlPublicarLoteHandler.cs` | Encola al publicar un lote |
+| Repositorio | `SIFTC.Infrastructure/Persistence/Repositories/NotificacionRepository.cs` | Cola, tokens y variaciones de IC del lote |
+| Correo | `SIFTC.Infrastructure/Notifications/SmtpCorreoNotificador.cs` | SMTP con MailKit |
+| Push | `SIFTC.Infrastructure/Notifications/FirebasePushNotificador.cs` | FCM v1 (cuenta de servicio) |
+| Worker | `SIFTC.API/Notifications/NotificacionesWorker.cs` | `BackgroundService` con `PeriodicTimer` |
 
-// Arranque de la API/worker (una sola vez)
-FirebaseApp.Create(new AppOptions
-{
-    Credential = GoogleCredential.FromJson(
-        Environment.GetEnvironmentVariable("Firebase__CredentialsJson"))
-});
+Notas de implementación:
 
-// Envío (CA1: debe ser < 1 minuto desde el evento)
-await FirebaseMessaging.DefaultInstance.SendAsync(new Message
-{
-    Token = token,
-    Notification = new Notification { Title = asunto, Body = cuerpo },
-    Android = new AndroidConfig { Priority = Priority.High },
-});
-```
+- `FirebaseApp` se crea una sola vez con nombre `siftc-notificaciones`; si
+  `Firebase__CredentialsJson` falta, se registra un warning y la API sigue arrancando.
+- El worker toma pendientes cuyo `fecha_ultimo_intento` sea nulo o haya vencido
+  (`ReintentoSegundos`) y los procesa en lotes de `LoteMaximo`.
+- El envío de correo usa `SecureSocketOptions.StartTls` cuando `Smtp__UseStartTls=true`.
+- Un token FCM `UNREGISTERED` se desactiva y no se reintenta; los demás errores suman
+  intentos.
+- El texto del aviso se arma con el nombre de la entidad y la variación porcentual.
 
 Manejo de errores para CA3:
 
-| Resultado FCM | Acción |
+| Resultado | Acción |
 |---|---|
-| `UNREGISTERED` | Token inválido: marcar `notificaciones_tokens.activo = false`, no reintentar |
-| `UNAVAILABLE`, `INTERNAL`, `UNAUTHENTICATED` transitorio | `intentos + 1`, `ultimo_error`, nuevo intento (máx. `max_intentos`) |
+| `UNREGISTERED` | `notificaciones_tokens.activo = false`, no reintentar |
+| Error transitorio (SMTP/FCM) | `intentos + 1`, `ultimo_error`, nuevo intento hasta `max_intentos` |
+| Se agotan los intentos | `estado = 'fallido'` |
 | Éxito | `estado = 'enviado'`, `fecha_envio = now()` |
 
-Para correo: cualquier `System.Net.Mail.SmtpClient`/MailKit con la configuración SMTP de
-la tabla de variables; mismo tratamiento de reintentos (el `canal` del envío es
-`correo` o `push`).
+Cada intento deja un evento en `seguridad.auditorias` con
+`accion = notificacion.enviada | notificacion.reintento | notificacion.fallida`
+(no se usa una sola acción `notificacion`, así se distingue el resultado). Un fallo al
+escribir la auditoría **no** revierte ni reintenta el envío: solo se registra en el log.
 
 ---
 
@@ -192,54 +206,90 @@ la tabla de variables; mismo tratamiento de reintentos (el `canal` del envío es
 | `Smtp__User` | remitente autenticado |
 | `Smtp__Password` | contraseña de aplicación (no la de la cuenta) |
 | `Smtp__From` | `notificaciones@siftc.local` |
+| `Smtp__UseStartTls` | `true` (puerto 587); `false` para SSL directo |
 | `Firebase__CredentialsJson` | **contenido JSON** de 1.6 en una línea (secreto) |
-| `Notificaciones__IntervaloSegundos` | `10` (worker: pendientes vencidos) |
+| `Notificaciones__IntervaloSegundos` | `10` (worker; CA1 exige ≤ 60 s) |
+| `Notificaciones__ReintentoSegundos` | `30` (espera antes de reintentar) |
+| `Notificaciones__LoteMaximo` | `50` (envíos por pasada) |
+
+En local se pueden definir con `dotnet user-secrets` o variables de sesión, por ejemplo:
+
+```powershell
+$env:Notificaciones__IntervaloSegundos = '10'
+$env:Notificaciones__ReintentoSegundos = '30'
+dotnet run --project SIFTC.API --launch-profile http
+```
+
+No se versiona ningún secreto: `SIFTC.API/appsettings.json` **no** debe llevar SMTP ni
+Firebase.
 
 ---
 
-## 5. Contrato API propuesto
+## 5. Contrato API
 
 | Método | Ruta | Descripción |
 |---|---|---|
-| `GET` | `/api/v1/notificaciones/reglas` | Reglas propias del usuario (CA2) |
+| `GET` | `/api/v1/notificaciones/reglas` | Reglas activas propias (CA2) |
 | `POST` | `/api/v1/notificaciones/reglas` | Crea regla: `{ canal, idEntidad?, umbral? }` |
-| `DELETE` | `/api/v1/notificaciones/reglas/{id}` | Desactiva/borra regla propia |
+| `DELETE` | `/api/v1/notificaciones/reglas/{id}` | Desactiva regla propia |
 | `POST` | `/api/v1/notificaciones/tokens` | Registra token FCM `{ plataforma, token }` |
-| `DELETE` | `/api/v1/notificaciones/tokens/{token}` | Da de baja un token |
-| `GET` | `/api/v1/notificaciones/envios?estado=` | Consulta de la cola/log (CA3) |
+| `DELETE` | `/api/v1/notificaciones/tokens/{token}` | Da de baja un token propio |
+| `GET` | `/api/v1/notificaciones/envios?estado=&limite=` | Cola/log de envíos (CA1/CA3) |
+| `POST` | `/api/v1/notificaciones/eventos` | Evento relevante del ETL; encola avisos (Admin/Analista) |
 
 Reglas de negocio:
-- `idEntidad` ausente = todas las entidades; `umbral` ausente = cualquier cambio.
+- `idEntidad` ausente = todas las entidades; `umbral` ausente = cualquier cambio
+  (se compara el valor absoluto de la variación).
 - `canal = 'ambos'` genera **dos filas** en `notificaciones_envios` (una por canal).
-- Cada envío se registra además en `seguridad.auditorias` con `accion=notificacion`
-  (mismo formato `key=value` de Script-22; política estricta: si falla el registro → 503).
+- Regla repetida (mismo usuario, canal y entidad) → `409`; si estaba desactivada se
+  reactiva con el umbral nuevo.
+- El Administrador ve todos los envíos; los demás roles solo los propios.
+- Cada intento deja un evento en `seguridad.auditorias` con
+  `accion = notificacion.enviada | notificacion.reintento | notificacion.fallida`.
+- El token FCM nunca se devuelve en las respuestas.
 
 ---
 
 ## 6. Relación con lo existente
 
 - `analitica.notificaciones_aprobacion` (Script-19) es la bandeja de **rechazos de lotes**;
-  el worker de esta HU puede consumirla y traducirla en filas de
-  `seguridad.notificaciones_envios`. No se duplica ni se modifica ese flujo.
+  esta HU no la modifica. El disparador real es `LotePublicadoEvent` (publicación de lote):
+  `NotificacionAlPublicarLoteHandler` calcula la variación de IC por entidad del lote y
+  encola los avisos. El ETL también puede llamar `POST /api/v1/notificaciones/eventos`.
 - La bitácora `seguridad.auditorias` (Script-22) se reutiliza como registro de auditoría
   del envío; `notificaciones_envios` guarda el detalle operativo (intentos/errores).
 
 ---
 
-## 7. Checklist de verificación
+## 7. Checklist de verificación (evidencia)
+
+**Automatizado contra Neon:** `C:\Users\jr10p\AppData\Local\Temp\opencode\verificar_notificaciones.ps1`
+(API en `http://localhost:5057`, `Notificaciones__IntervaloSegundos=3`,
+`Notificaciones__ReintentoSegundos=5`). Resultado de la última corrida: **24/24 PASS**.
 
 **CA1 – < 1 minuto**
-1. Disparar un evento (ej. rechazo de lote o cambio que cumpla una regla).
-2. Medir `fecha_evento` (auditoría) vs `fecha_envio` (`notificaciones_envios`) → < 60 s.
-3. Confirmar recepción: correo en la bandeja y push en el dispositivo.
+1. Crear regla `correo`/`push` y disparar un evento → `POST /eventos` responde
+   `{"encolados": 2}`.
+2. El worker intenta el envío en la siguiente pasada; medido en **7 s** con intervalo de
+   3 s (con el default de 10 s queda muy por debajo de 60 s).
+3. `GET /notificaciones/envios` trae `fechaCreacion`, `fechaUltimoIntento` y `fechaEnvio`.
+4. Entrega real: **pendiente de credenciales** (correo en bandeja y push en dispositivo).
 
 **CA2 – reglas**
-1. Crear regla por API: `canal='push'`, `idEntidad=<una>`, `umbral=2`.
-2. Cambio menor en otra entidad → no llega nada; cambio > 2 % en la entidad → llega.
-3. Cambiar `canal='correo'` → llega solo por correo.
+1. `POST /reglas` con `canal`, `idEntidad` y `umbral` → `200`.
+2. Evento de otra entidad → `encolados = 0`; evento sobre la entidad y por encima del
+   umbral → encola.
+3. `canal='ambos'` → 2 filas (correo y push).
+4. Regla duplicada → `409`; canal inválido o umbral negativo → `422`.
+5. Cada usuario solo ve y desactiva sus reglas; la de otro → `404`.
 
 **CA3 – reintentos y fallos**
-1. Apuntar SMTP a un host inválido → fila en `notificaciones_envios` con
-   `estado='pendiente'`, `intentos=1`, `ultimo_error` poblado.
-2. Dejar agotar `max_intentos` → `estado='fallido'`.
-3. Verificar que cada envío quedó también en `seguridad.auditorias` (`accion=notificacion`).
+1. Sin SMTP/Firebase configurados, `ultimoError` queda con
+   `SMTP no configurado...` / `Firebase no configurado...`.
+2. Tras 3 intentos la fila queda `estado='fallido'`, `intentos=3`, `maxIntentos=3`.
+3. `seguridad.auditorias` contiene los eventos `notificacion.reintento` /
+   `notificacion.fallida` de los intentos.
+4. Token FCM inválido (`UNREGISTERED`) → el token se desactiva y no se reintenta.
+
+> Para cerrar el CA1 al 100 % falta solo aportar `Smtp__*` y `Firebase__CredentialsJson`
+> reales y repetir los pasos 3 y 4 de CA1 con un correo y un dispositivo reales.

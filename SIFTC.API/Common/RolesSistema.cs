@@ -43,6 +43,9 @@ public static class RolesSistema
     // HU-DD-08: carga del diccionario (Administrador y Data Steward).
     public const string DiccionarioCarga = Administrador + "," + DataSteward;
 
+    // HU-AD-10: ingreso de eventos que disparan notificaciones (ETL/backend).
+    public const string NotificacionesEvento = Administrador + "," + AnalistaFinanciero;
+
     // Matriz financiera cruda (Confidencial). Según la matriz: Data Steward y Auditor leen.
     public const string MatrizCrudaLectura = DataSteward + "," + Auditor;
 }

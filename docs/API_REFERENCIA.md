@@ -245,6 +245,13 @@ Un rol sin permiso siempre recibe `403`, nunca `200` con arreglo vacio.
 | POST | `/api/v1/diccionario/cargar` | Administrador, Data Steward | Cargar `diccionario.csv` (reemplaza la tabla). |
 | GET | `/api/v1/diccionario` | Todos (filtro por clasificacion) | Buscar terminos del diccionario. |
 | GET | `/api/v1/diccionario/{codigo}` | Todos (filtro por clasificacion) | Ficha completa; `404` si no existe o no le corresponde. |
+| GET | `/api/v1/notificaciones/reglas` | Todos | Reglas de notificacion propias (CA2). |
+| POST | `/api/v1/notificaciones/reglas` | Todos | Crear regla propia (canal, entidad y umbral). |
+| DELETE | `/api/v1/notificaciones/reglas/{idRegla}` | Todos (dueno) | Desactivar una regla propia. |
+| POST | `/api/v1/notificaciones/tokens` | Todos | Registrar el token FCM del dispositivo. |
+| DELETE | `/api/v1/notificaciones/tokens/{token}` | Todos (dueno) | Dar de baja un token FCM propio. |
+| GET | `/api/v1/notificaciones/envios` | Todos (Admin ve todos) | Cola y log de envios (CA1/CA3). |
+| POST | `/api/v1/notificaciones/eventos` | Administrador, Analista | Registrar evento relevante y encolar avisos (ETL). |
 
 ---
 
@@ -819,6 +826,107 @@ curl "https://siftc.onrender.com/api/v1/diccionario/RNT-01" \
   -H "Authorization: Bearer $TOKEN"
 ```
 
+### 3.25 GET /api/v1/notificaciones/reglas
+
+- HU-AD-10 / HU-MO-05 (CA2). Cualquier usuario con sesion.
+- Devuelve **solo las reglas activas del usuario autenticado** (no hay endpoint para
+  consultar las reglas de otro usuario).
+- Respuesta `200` (arreglo):
+
+```json
+[
+  { "idRegla": "0199...", "canal": "correo",
+    "idEntidad": "4ebbf629-0d2d-46ef-b233-93421e13eaee",
+    "umbral": 2.5, "activa": true, "fechaCreacion": "2026-11-16T23:10:00+00:00" },
+  { "idRegla": "0199...", "canal": "ambos", "idEntidad": null,
+    "umbral": null, "activa": true, "fechaCreacion": "2026-11-16T23:11:00+00:00" }
+]
+```
+
+- `idEntidad: null` = todas las entidades. `umbral: null` = cualquier cambio.
+
+### 3.26 POST /api/v1/notificaciones/reglas
+
+- HU-AD-10 / HU-MO-05 (CA2). Cualquier usuario con sesion.
+- Cuerpo:
+
+```json
+{ "canal": "ambos", "idEntidad": "4ebbf629-0d2d-46ef-b233-93421e13eaee", "umbral": 2.5 }
+```
+
+| Campo | Tipo | Obligatorio | Descripcion |
+|---|---|---|---|
+| `canal` | `correo`, `push`, `ambos` | si | Canal del aviso. `ambos` encola dos envios. |
+| `idEntidad` | UUID o null | no | `null` = todas las entidades. |
+| `umbral` | decimal o null | no | Variacion minima en % (valor absoluto). `null` = cualquier cambio. |
+
+- Respuesta `200` con la regla creada (`NotificacionReglaDto`).
+- Una regla repetida (mismo usuario, canal y entidad) devuelve `409`
+  `notificacion.regla.duplicada`. Si la regla estaba **desactivada**, se reactiva con el
+  umbral nuevo y devuelve `200`.
+- Errores: `401`; `422` `notificacion.canal.invalid`, `notificacion.umbral.invalid`,
+  `notificacion.entidad.no.existe`; `409` `notificacion.regla.duplicada`.
+
+### 3.27 DELETE /api/v1/notificaciones/reglas/{idRegla}
+
+- HU-AD-10 / HU-MO-05 (CA2). Desactiva (borrado logico) la regla propia.
+- Respuesta `200` sin cuerpo. Regla inexistente o de otro usuario: `404`
+  `notificacion.regla.no.encontrada` (no se filtra informacion).
+
+### 3.28 POST /api/v1/notificaciones/tokens
+
+- Registra el token FCM que entrega el frontend o la app movil.
+- Cuerpo: `{ "plataforma": "web", "token": "<token FCM>" }` (`plataforma` = `web`,
+  `android` o `ios`).
+- El token es unico: si ya existia, se reasigna al usuario autenticado (cambio de sesion).
+- Respuesta `200` con `NotificacionTokenDto`; **nunca devuelve el valor del token**.
+- Errores: `401`; `422` `notificacion.token.plataforma.invalid`, `notificacion.token.required`.
+
+### 3.29 DELETE /api/v1/notificaciones/tokens/{token}
+
+- Da de baja (borrado fisico) un token propio.
+- Respuesta `200`. Si no existe o es de otro usuario: `404` `notificacion.token.no.encontrado`.
+
+### 3.30 GET /api/v1/notificaciones/envios
+
+- HU-AD-10 / HU-MO-05 (CA1 y CA3). El **Administrador ve todos** los envios; los demas
+  roles solo los propios.
+- Query:
+
+| Parametro | Tipo | Default | Descripcion |
+|---|---|---|---|
+| `estado` | `pendiente`, `enviado`, `fallido` | vacio | Filtro opcional. |
+| `limite` | int 1..200 | 50 | Maximo de filas. |
+
+- Respuesta `200` (arreglo de `NotificacionEnvioDto`, mas reciente primero). Con
+  `fechaCreacion` y `fechaEnvio` se verifica el CA1 (envio en menos de 1 minuto).
+- Errores: `401`; `422` `notificacion.envio.estado.invalid`,
+  `notificacion.envio.limite.invalid`.
+
+```bash
+curl "https://siftc.onrender.com/api/v1/notificaciones/envios?estado=fallido&limite=20" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+### 3.31 POST /api/v1/notificaciones/eventos
+
+- HU-AD-10 / HU-MO-05 (CA1 y CA2). Roles: **Administrador** y **Analista financiero**.
+  Es el punto de entrada para el ETL/backend cuando hay un evento relevante.
+- Cuerpo: `{ "idEntidad": "uuid", "variacionPct": 3.5, "nombreEntidad": "opcional" }`.
+- Evalua las reglas activas de todos los usuarios y encola los envios que cumplan
+  entidad y umbral. Una regla `ambos` genera dos filas (correo y push).
+- Respuesta `200`:
+
+```json
+{ "encolados": 2 }
+```
+
+- El worker en background envia la cola cada `Notificaciones:IntervaloSegundos`
+  (10 s por defecto); si el envio falla, reintenta cada `ReintentoSegundos` (30 s) hasta
+  3 intentos y deja el fallo en `seguridad.auditorias` (CA3).
+- Errores: `401`; `403`; `422` `notificacion.evento.entidad.required`,
+  `notificacion.entidad.no.existe`.
+
 ---
 
 ## 4. DTOs
@@ -911,6 +1019,50 @@ Ver ejemplo de `/api/v1/ic/configuracion`.
 Ejemplos de CSV: `docs/ejemplos/diccionario_prueba.csv` (13 filas, formato exacto) y
 `docs/ejemplos/diccionario_columnas_faltantes.csv` (rechazado con `422`).
 
+### NotificacionReglaDto (GET/POST /api/v1/notificaciones/reglas)
+
+| Campo | Tipo | Descripcion |
+|---|---|---|
+| `idRegla` | UUID | Identificador de la regla. |
+| `canal` | `correo`, `push`, `ambos` | Canal del aviso. |
+| `idEntidad` | UUID o null | `null` = todas las entidades. |
+| `umbral` | decimal o null | Variacion minima en %; `null` = cualquier cambio. |
+| `activa` | bool | Las desactivadas no se devuelven. |
+| `fechaCreacion` | datetime | Alta de la regla. |
+
+### NotificacionTokenDto (POST /api/v1/notificaciones/tokens)
+
+| Campo | Tipo | Descripcion |
+|---|---|---|
+| `idToken` | UUID | Identificador interno. |
+| `plataforma` | `web`, `android`, `ios` | Origen del token. |
+| `activo` | bool | Estado del token. |
+| `fechaRegistro` | datetime | Alta del token. |
+
+El valor del token FCM nunca se devuelve.
+
+### NotificacionEnvioDto (GET /api/v1/notificaciones/envios)
+
+| Campo | Tipo | Descripcion |
+|---|---|---|
+| `idEnvio` | UUID | Identificador del envio. |
+| `idRegla` | UUID o null | Regla que lo genero. |
+| `canal` | `correo`, `push` | Canal concreto del envio. |
+| `asunto` | string | Asunto del correo o titulo del push. |
+| `estado` | `pendiente`, `enviado`, `fallido` | Estado en la cola. |
+| `intentos` | int | Intentos realizados. |
+| `maxIntentos` | int | Tope de reintentos (3). |
+| `ultimoError` | string o null | Ultimo error registrado (CA3). |
+| `fechaCreacion` | datetime | Cuando entro a la cola. |
+| `fechaUltimoIntento` | datetime o null | Ultimo intento de envio. |
+| `fechaEnvio` | datetime o null | Cuando se envio correctamente. |
+
+### RegistrarEventoResponseDto (POST /api/v1/notificaciones/eventos)
+
+| Campo | Tipo | Descripcion |
+|---|---|---|
+| `encolados` | int | Filas de envio creadas por el evento. |
+
 ---
 
 ## 5. Estado actual y limitaciones conocidas
@@ -925,6 +1077,10 @@ Estas limitaciones son parte del contrato actual y deben considerarse antes de c
 - La lectura de matriz cruda y datos financieros detallados para Data Steward y Auditor no tiene endpoint implementado.
 - La auditoria minima esta en curso: `GET /api/v1/exportar` ya registra cada exportacion en `seguridad.auditorias` (Script-22); la consulta de auditoria y sus endpoints siguen pendientes.
 - El filtrado por sensibilidad campo a campo esta pendiente.
+- Las notificaciones (HU-AD-10 / HU-MO-05) arrancan sin credenciales: si no se definen
+  `Smtp__*` y `Firebase__CredentialsJson`, los envios quedan en la cola como `fallido`
+  con el error correspondiente (CA3), no se simula el exito. La entrega real se valida
+  cuando el equipo aporta las credenciales (ver `docs/NOTIFICACIONES.md`).
 - Las pruebas automatizadas actuales cubren validacion del IC; las pruebas por perfil de todos los endpoints deben integrarse en el repositorio de pruebas acordado.
 
 ---

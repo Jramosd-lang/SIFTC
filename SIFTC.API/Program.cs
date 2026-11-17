@@ -6,8 +6,10 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Scalar.AspNetCore;
 using SIFTC.Api.Common;
+using SIFTC.Api.Notifications;
 using SIFTC.Api.Realtime;
 using SIFTC.Application;
+using SIFTC.Application.UseCases.Notificaciones;
 using SIFTC.Infrastructure;
 using SIFTC.Infrastructure.Authentication;
 using System.Text;
@@ -18,6 +20,11 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddTiempoReal(builder.Configuration);
+
+// HU-AD-10 / HU-MO-05: cola de notificaciones (correo + push) en background.
+builder.Services.Configure<NotificacionesOptions>(
+    builder.Configuration.GetSection(NotificacionesOptions.SectionName));
+builder.Services.AddHostedService<NotificacionesWorker>();
 builder.Services.AddProblemDetails(options =>
 {
     options.CustomizeProblemDetails = context =>
