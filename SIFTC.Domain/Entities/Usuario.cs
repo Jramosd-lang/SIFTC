@@ -56,6 +56,38 @@ public sealed class Usuario
         ));
     }
 
+    /// <summary>
+    /// Actualiza los datos editables del usuario (no toca la contraseña ni el
+    /// estado; para eso están <see cref="SetPasswordHash"/>, <see cref="Activate"/>
+    /// y <see cref="Deactivate"/>). Mantiene las mismas validaciones del alta.
+    /// </summary>
+    public Result ActualizarDatos(
+        string email,
+        string primerNombre,
+        string? segundoNombre,
+        string primerApellido,
+        string? segundoApellido,
+        Guid idRol)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+            return Result.Failure(new Error("usuario.email.required", "El correo electrónico es obligatorio.", ErrorType.Validation));
+
+        if (string.IsNullOrWhiteSpace(primerNombre) || string.IsNullOrWhiteSpace(primerApellido))
+            return Result.Failure(new Error("usuario.nombre.required", "El primer nombre y el primer apellido son obligatorios.", ErrorType.Validation));
+
+        if (idRol == Guid.Empty)
+            return Result.Failure(new Error("usuario.rol.required", "El rol es obligatorio.", ErrorType.Validation));
+
+        Email = email.Trim().ToLowerInvariant();
+        PrimerNombre = primerNombre.Trim();
+        SegundoNombre = string.IsNullOrWhiteSpace(segundoNombre) ? null : segundoNombre.Trim();
+        PrimerApellido = primerApellido.Trim();
+        SegundoApellido = string.IsNullOrWhiteSpace(segundoApellido) ? null : segundoApellido.Trim();
+        IdRol = idRol;
+
+        return Result.Success();
+    }
+
     public void SetPasswordHash(string passwordHash) => PasswordHash = passwordHash;
     public void Activate() => Estado = "activo";
     public void Deactivate() => Estado = "inactivo";

@@ -25,11 +25,20 @@ public class AutenticarUsuarioCommandHandler(
             return Result.Failure<AuthResponseDto>(credencialesInvalidas);
         }
 
-        var usuario = await usuarioRepository.GetByEmailAsync(request.Usuario.Trim());
+        var usuario = await usuarioRepository.GetByEmailAsync(request.Usuario.Trim().ToLowerInvariant());
 
         if (usuario is null)
         {
             await RegistrarLoginFallidoAsync("Usuario no registrado", null, cancellationToken);
+            return Result.Failure<AuthResponseDto>(credencialesInvalidas);
+        }
+
+        // Baja lógica: el usuario inactivo no puede iniciar sesión aunque su
+        // contraseña siga siendo válida. Mismo mensaje genérico para no revelar
+        // el estado de la cuenta.
+        if (!string.Equals(usuario.Estado, "activo", StringComparison.OrdinalIgnoreCase))
+        {
+            await RegistrarLoginFallidoAsync("Usuario inactivo", usuario.IdUsuario, cancellationToken);
             return Result.Failure<AuthResponseDto>(credencialesInvalidas);
         }
 

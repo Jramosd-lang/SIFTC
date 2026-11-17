@@ -225,6 +225,9 @@ Un rol sin permiso siempre recibe `403`, nunca `200` con arreglo vacio.
 | GET | `/openapi/v1.json` | Publico | Contrato OpenAPI. |
 | POST | `/api/v1/auth/login` | Publico | Login JWT. |
 | POST | `/api/v1/usuarios/registrar` | Administrador | Crear usuario. |
+| GET | `/api/v1/usuarios` | Administrador | Listar usuarios **activos** (el front no ve inactivos). |
+| PUT | `/api/v1/usuarios/{id}` | Administrador | Editar datos, rol y (opcional) contrasena. |
+| DELETE | `/api/v1/usuarios/{id}` | Administrador | Baja logica: `estado` pasa a `inactivo` (no borra la fila). |
 | GET | `/api/v1/entidades` | Todos | Listar entidades. |
 | GET | `/api/v1/entidades/{id}` | Todos | Obtener entidad. |
 | GET | `/api/v1/entidades/{id}/ohlc` | Todos | Serie OHLC. |
@@ -328,6 +331,8 @@ Errores:
 - `409`: correo ya registrado.
 - `403`: rol distinto de Administrador.
 - `400/422`: body invalido o datos incompletos.
+- Un usuario con `estado = inactivo` (baja logica) **no puede iniciar sesion**: recibe el
+  mismo `401` generico y el intento queda en la auditoria como `login.fallido`.
 
 ### 3.5 GET /api/v1/entidades
 
@@ -736,6 +741,17 @@ curl "https://siftc.onrender.com/api/v1/exportar?tipo=ranking&formato=csv&sector
   `formula`, `unidad`, `clasificacion`. El orden no importa y las columnas de mas se ignoran.
 - El cargue **reemplaza el contenido completo** de `analitica.diccionario`: la tabla queda
   igual al Excel de Frell. Si el archivo no es valido, se rechaza **sin modificar la tabla**.
+- `database/diccionario.csv` es el snapshot vigente del Excel real
+  (`Diccionario-SIFTC_Final.xlsx`): **123 filas** = 66 datos + 10 metricas + 47 terminos.
+  Mapeo aplicado:
+  - hoja **Diccionario** → `tipo=dato` (codigo = nombre tecnico, nombre = nombre de negocio,
+    definicion = descripcion, unidad = unidad salvo "No aplica").
+  - hoja **Glosario** → `tipo=metrica` cuando la formula trae codigo (`RNT-01`, `LIQ-01`,
+    `END-01`, `CRE-01`, `CAL-01`, ...) y `tipo=termino` con codigo `GLO-<slug>` en el resto.
+  - se excluye el termino marcado como **Reemplazado** y "Dato personal" queda
+    `Restringido` (Ley 1581 / RNF05).
+  - el Excel tiene 17 columnas fisicas (longitud, formato, nulabilidad, reglas, tabla y
+    columna); el endpoint conserva solo las 8 del CSV, el resto sigue en el Excel.
 - Valores admitidos: `tipo` = `dato`, `metrica`, `termino`; `clasificacion` = `Publico`,
   `Interno`, `Confidencial`, `Restringido` (se normaliza a la forma canonica).
 - Respuesta `200`:
@@ -927,6 +943,76 @@ curl "https://siftc.onrender.com/api/v1/notificaciones/envios?estado=fallido&lim
 - Errores: `401`; `403`; `422` `notificacion.evento.entidad.required`,
   `notificacion.entidad.no.existe`.
 
+### 3.32 GET /api/v1/usuarios
+
+- Roles: **Administrador**.
+- Devuelve **solo los usuarios con `estado = activo`**, ordenados por primer apellido y
+  nombre. Las bajas logicas (`inactivo`) no aparecen: el front nunca las recibe.
+- Respuesta `200` (arreglo de `UsuarioDto`):
+
+```json
+[
+  {
+    "idUsuario": "01a1e716-87a8-739b-a9d8-1ff8b74d6b35",
+    "email": "gerente@siftc.local",
+    "primerNombre": "Ana",
+    "segundoNombre": null,
+    "primerApellido": "Perez",
+    "segundoApellido": null,
+    "idRol": "c43ddacf-b545-4190-b051-c8172e3026f0",
+    "rol": "Gerente / Directivo",
+    "estado": "activo"
+  }
+]
+```
+
+- Nunca incluye `passwordHash`.
+- Errores: `401` sin token; `403` rol distinto de Administrador.
+
+### 3.33 PUT /api/v1/usuarios/{id}
+
+- Roles: **Administrador**.
+- Edita los datos del usuario. El `id` va en la ruta; el cuerpo reemplaza los datos
+  editables:
+  
+```json
+{
+  "email": "nuevo.correo@siftc.local",
+  "primerNombre": "Ana",
+  "segundoNombre": "Maria",
+  "primerApellido": "Perez",
+  "segundoApellido": "Gomez",
+  "idRol": "c43ddacf-b545-4190-b051-c8172e3026f0",
+  "password": "NuevaClave123*"
+}
+```
+
+- `password` es **opcional**: si se omite o llega vacio, la contrasena actual se conserva.
+- El correo se normaliza a minusculas y debe seguir siendo unico.
+- `idRol` debe existir en `seguridad.roles`.
+- Respuesta `200`: el `UsuarioDto` actualizado (sin `passwordHash`).
+- Errores:
+  - `404`: `usuario.no.encontrado`.
+  - `409`: `usuario.duplicado` (el correo ya es de otro usuario).
+  - `422`: datos invalidos, `usuario.rol.invalido`, `usuario.email.required`,
+    `usuario.nombre.required`, `usuario.rol.required`.
+- La edicion queda en auditoria como `usuario.actualizado`.
+
+### 3.34 DELETE /api/v1/usuarios/{id}
+
+- Roles: **Administrador**.
+- **Baja logica**: no borra la fila. Cambia `estado` a `inactivo`, de modo que el usuario
+  desaparece de `GET /api/v1/usuarios`, no puede iniciar sesion, pero conserva sus reglas,
+  tokens, envios y auditoria.
+- Es **idempotente**: repetir la baja de un usuario ya inactivo responde `200`.
+- Respuesta `200`: sin cuerpo.
+- Errores:
+  - `404`: `usuario.no.encontrado`.
+  - `409`: `usuario.ultimo.administrador` (no se puede dejar el sistema sin administradores
+    activos).
+  - `422`: `usuario.autoeliminar` (un administrador no puede desactivarse a si mismo).
+- La baja queda en auditoria como `usuario.desactivado`.
+
 ---
 
 ## 4. DTOs
@@ -992,7 +1078,7 @@ Ver ejemplo de `/api/v1/ic/configuracion`.
 
 | Campo | Tipo | Descripcion |
 |---|---|---|
-| `codigo` | string | `RNT-01`, `utilidad_neta`, `GLO-IC`. |
+| `codigo` | string | `RNT-01`, `utilidad_neta`, `GLO-IC-INDICE-DE-COMPETITIVIDAD`. |
 | `tipo` | `dato`, `metrica`, `termino` | Tipo de fila. |
 | `nombre` | string | Nombre o termino. |
 | `definicion` | string | Definicion corta. |
@@ -1016,8 +1102,23 @@ Ver ejemplo de `/api/v1/ic/configuracion`.
 |---|---|---|
 | `registros` | int | Filas insertadas (el total del archivo valido). |
 
-Ejemplos de CSV: `docs/ejemplos/diccionario_prueba.csv` (13 filas, formato exacto) y
+Ejemplos de CSV: `database/diccionario.csv` (snapshot real del Excel, 123 filas),
+`docs/ejemplos/diccionario_prueba.csv` (13 filas, formato exacto) y
 `docs/ejemplos/diccionario_columnas_faltantes.csv` (rechazado con `422`).
+
+### UsuarioDto (GET /api/v1/usuarios y PUT /api/v1/usuarios/{id})
+
+| Campo | Tipo | Descripcion |
+|---|---|---|
+| `idUsuario` | UUID | Identificador del usuario. |
+| `email` | string | Correo de login (minusculas). |
+| `primerNombre` | string | Primer nombre. |
+| `segundoNombre` | string o null | Segundo nombre. |
+| `primerApellido` | string | Primer apellido. |
+| `segundoApellido` | string o null | Segundo apellido. |
+| `idRol` | UUID | Rol asignado. |
+| `rol` | string | Nombre del rol (`Administrador`, `Gerente / Directivo`, ...). |
+| `estado` | `activo` o `inactivo` | En el listado siempre es `activo`. |
 
 ### NotificacionReglaDto (GET/POST /api/v1/notificaciones/reglas)
 
