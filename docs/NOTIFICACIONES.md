@@ -25,16 +25,16 @@ como dueño de los objetos, después de Script-22). **Ya aplicado en local y en 
   `POST /api/v1/notificaciones/eventos` para que el ETL/otro backend ingrese eventos.
 - 21 pruebas unitarias de notificaciones (74 en total en la suite) y E2E contra Neon
   (`verificar_notificaciones.ps1`, 24/24 PASS).
+- **Correo real verificado** con SMTP de Gmail (`alza.notificaciones@gmail.com`, remitente
+  `ALZA`): un evento encoló el aviso y salió a un buzón real en **3,9 s** (§7, CA1).
 
-**Pendiente de quien tenga la consola Firebase / Render** (bloquea la entrega real, no el
-código):
-- `Firebase__CredentialsJson` (§1.6/§4) → sin esto FCM no envía.
-- Credenciales SMTP reales (§4) → sin esto el correo no envía.
+**Pendiente de quien tenga la consola Firebase / Render:**
+- `Firebase__CredentialsJson` (§1.6/§4) → sin esto FCM no envía (el correo ya funciona).
 - Push web: clave VAPID (§1.3) y `google-services.json` (§1.4) cuando el front/móvil los pidan.
 
 Sin esas credenciales la API **arranca igual**: cada envío queda en la cola como
-`fallido` con `ultimoError = "SMTP no configurado..."` / `"Firebase no configurado..."`,
-que es justamente la evidencia del CA3.
+`fallido` con `ultimoError = "Firebase no configurado..."`, que es justamente la
+evidencia del CA3.
 
 **Tareas del plan original (todas cerradas):**
 
@@ -273,7 +273,13 @@ Reglas de negocio:
 2. El worker intenta el envío en la siguiente pasada; medido en **7 s** con intervalo de
    3 s (con el default de 10 s queda muy por debajo de 60 s).
 3. `GET /notificaciones/envios` trae `fechaCreacion`, `fechaUltimoIntento` y `fechaEnvio`.
-4. Entrega real: **pendiente de credenciales** (correo en bandeja y push en dispositivo).
+4. **Entrega real de correo: verificada.** SMTP de Gmail (`alza.notificaciones@gmail.com`,
+   remitente `ALZA`); evento sobre *Andina Energía S.A.* con variación 4,25 % →
+   `estado='enviado'`, `fechaCreacion=01:49:19.149` y `fechaEnvio=01:49:23.085` (**3,9 s**),
+   recibido en `jr10p9@gmail.com`. Asunto: `Cambio relevante en Andina Energía S.A.`;
+   auditoría `notificacion.enviada` registrada.
+5. Entrega real de **push**: pendiente de `Firebase__CredentialsJson` (dispositivo con token
+   FCM registrado).
 
 **CA2 – reglas**
 1. `POST /reglas` con `canal`, `idEntidad` y `umbral` → `200`.
@@ -291,5 +297,5 @@ Reglas de negocio:
    `notificacion.fallida` de los intentos.
 4. Token FCM inválido (`UNREGISTERED`) → el token se desactiva y no se reintenta.
 
-> Para cerrar el CA1 al 100 % falta solo aportar `Smtp__*` y `Firebase__CredentialsJson`
-> reales y repetir los pasos 3 y 4 de CA1 con un correo y un dispositivo reales.
+> El correo quedó cerrado al 100 %. Para cerrar el push falta solo aportar
+> `Firebase__CredentialsJson` y registrar un token FCM desde un dispositivo real.
