@@ -16,26 +16,28 @@ public sealed class RankingController(IMediator mediator) : BaseApiController
     [EndpointSummary("Obtiene el ranking general o por dimensión")]
     [EndpointDescription("""
         Roles admitidos: Administrador, Data Steward, Analista financiero, Gerente / Directivo y Auditor.
-        Usuario móvil no tiene acceso al ranking.
+        Usuario móvil no tiene acceso al ranking (devuelve 403 Forbidden).
 
-        Devuelve el ranking de entidades por IC. Si se envía dimension, calcula el puntaje de esa dimensión
-        (promedio de sus métricas normalizadas) y ordena por ese puntaje.
-        Para Gerente / Directivo, posicion y cambioPosicion se devuelven en null.
-        Parámetros:
-        - sector: nombre exacto del sector. Vacío = todos.
-        - dimension: Rentabilidad, Liquidez, Solvencia o Crecimiento. Vacío = IC general.
-         - periodo: Diaria, Mensual o Trimestral. Se devuelve en la respuesta.
-        - orden: posicion, entidad, sector, ic o variacionPct. Por defecto ic.
-        - dir: asc o desc. Por defecto desc.
-        - limit: entero entre 1 y 200. Por defecto 50.
-        - offset: entero >= 0. Por defecto 0.
-        Valores permitidos de dimension: Rentabilidad, Liquidez, Solvencia, Crecimiento.
-        Valores permitidos de periodo: Diaria, Mensual, Trimestral.
-        Valores permitidos de orden: posicion, entidad, sector, ic, variacionPct.
-        Valores permitidos de dir: asc, desc.
+        Devuelve el ranking comparativo de entidades según su Índice de Competitividad (IC) o por dimensión financiera.
+        Si se especifica `dimension`, calcula el puntaje ponderado de dicha dimensión (promedio de sus métricas normalizadas) y ordena según ese puntaje.
 
-        Respuesta: { periodo, total, items: [{ posicion, cambioPosicion, entidadId, entidad, sector, ic, variacionPct }] }.
-        cambioPosicion > 0 significa que subió; < 0 que bajó; 0 que mantuvo.
+        Política de visualización para roles directivos:
+        Para el rol `Gerente / Directivo`, los atributos `posicion` y `cambioPosicion` se devuelven en `null` por cumplimiento de políticas de visualización ejecutiva.
+
+        Parámetros de consulta (Query Params):
+        - `sector` (opcional): Nombre exacto del sector económico (ej. 'Financiero', 'Energía'). Si se omite o va vacío, incluye todos los sectores.
+        - `dimension` (opcional): Dimensión analítica a evaluar ('Rentabilidad', 'Liquidez', 'Solvencia' o 'Crecimiento'). Si se omite, calcula el IC general.
+        - `periodo` (opcional): Frecuencia temporal ('diario'/'Diaria', 'mensual'/'Mensual', 'trimestral'/'Trimestral'). Por defecto 'Mensual'.
+        - `orden` (opcional): Criterio de ordenación ('posicion', 'entidad', 'sector', 'ic', 'variacionPct'). Por defecto 'ic'.
+        - `dir` (opcional): Dirección del orden ('asc' o 'desc'). Por defecto 'desc'.
+        - `limit` (opcional): Entero entre 1 y 200. Por defecto 50.
+        - `offset` (opcional): Entero mayor o igual a 0 para desplazamiento paginado. Por defecto 0.
+
+        Estructura de respuesta:
+        - `periodo`: Frecuencia consultada.
+        - `total`: Total de entidades que cumplen los filtros.
+        - `items`: Arreglo de objetos `{ posicion, cambioPosicion, entidadId, entidad, sector, ic, variacionPct }`.
+          `cambioPosicion > 0` indica mejora de puesto (subió), `< 0` indica descenso (bajó) y `0` que mantuvo el puesto.
         """)]
     [ProducesResponseType<RankingResponseDto>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]

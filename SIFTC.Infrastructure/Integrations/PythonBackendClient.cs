@@ -140,13 +140,13 @@ public sealed class PythonBackendClient(HttpClient httpClient, IConfiguration co
         return "api/v1/ranking?" + string.Join("&", parametros);
     }
 
-    // La API usa minúsculas (diario, mensual, trimestral). El microservicio exige sus valores exactos.
+    // El microservicio FastAPI exige los valores en minúsculas: diario, mensual, trimestral.
     private static string PeriodoPython(string periodo) => periodo.ToLowerInvariant() switch
     {
-        "diario" => "Diaria",
-        "mensual" => "Mensual",
-        "trimestral" => "Trimestral",
-        _ => periodo
+        "diaria" or "diario" => "diario",
+        "mensual" => "mensual",
+        "trimestral" => "trimestral",
+        _ => periodo.ToLowerInvariant()
     };
 
     private static (string? Mensaje, IReadOnlyList<JsonElement> Errores) ParsearErrores(JsonElement root)

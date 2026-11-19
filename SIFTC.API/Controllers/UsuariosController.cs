@@ -37,19 +37,32 @@ public class UsuariosController(IMediator mediator) : BaseApiController
     }
 
     [HttpPost("registrar")]
-    [EndpointSummary("Registra un usuario")]
+    [EndpointSummary("Registra un nuevo usuario")]
     [EndpointDescription("""
-        Roles admitidos: Administrador.
+        Roles admitidos: Administrador (403 para otros roles).
+
+        Crea un nuevo usuario en la tabla `seguridad.usuarios` con estado inicial 'activo'.
 
         Cuerpo JSON:
-        - email: correo único del usuario.
-        - password: contraseña en texto plano; se guarda con bcrypt.
-        - primerNombre: primer nombre.
-        - primerApellido: primer apellido.
-        - idRol: UUID de un rol existente en seguridad.roles.
+        - email: correo electrónico único del usuario (se normaliza a minúsculas).
+        - password: contraseña en texto plano; el backend genera el hash bcrypt.
+        - primerNombre: primer nombre (obligatorio).
+        - primerApellido: primer apellido (obligatorio).
+        - idRol: UUID de un rol existente en la tabla `seguridad.roles`.
 
-        Respuesta 200: UUID del usuario creado.
-        Respuesta 409: el correo ya existe.
+        Catálogo de Roles y sus UUIDs:
+        | Rol | UUID (idRol) | Responsabilidad |
+        | :--- | :--- | :--- |
+        | Administrador | `179acd26-b52c-4e75-8c26-0b6b1b5737e4` | Gestión global del sistema, usuarios y parámetros IC |
+        | Analista financiero | `bacadb8f-63d4-4032-8c43-729f597623b4` | Carga de matrices CSV, cálculos y aprobación de lotes |
+        | Auditor | `36078d03-86e6-4075-a7b5-c82b3e414760` | Lectura de bitácora, trazabilidad y matriz cruda |
+        | Data Steward | `ea07d6fd-a849-4764-8b03-688163837303` | Carga y gestión del diccionario de datos y calidad |
+        | Gerente / Directivo | `c43ddacf-b545-4190-b051-c8172e3026f0` | Tableros ejecutivos, series OHLC y ranking general |
+        | Usuario móvil | `c6152fdb-6b06-4c89-95b9-42b6222320f1` | Consulta de cotizaciones y watchlist personal |
+
+        Respuesta 200: UUID del usuario creado exitosamente.
+        Respuesta 409: Conflicto si el correo electrónico ya se encuentra registrado.
+        Respuesta 422: Datos inválidos o UUID de rol no registrado en `seguridad.roles`.
         """)]
     [ProducesResponseType<Guid>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
@@ -65,20 +78,31 @@ public class UsuariosController(IMediator mediator) : BaseApiController
     [HttpPut("{id:guid}")]
     [EndpointSummary("Edita los datos de un usuario")]
     [EndpointDescription("""
-        Roles admitidos: Administrador.
+        Roles admitidos: Administrador (403 para otros roles).
 
-        Cuerpo JSON (todos los datos se reemplazan; el id va en la ruta):
-        - email: correo único; si cambia, no puede estar usado por otro usuario.
+        Reemplaza la información del usuario especificado por su UUID en la ruta (`{id}`).
+
+        Cuerpo JSON:
+        - email: correo electrónico del usuario (no puede coincidir con el de otro usuario existente).
         - primerNombre, primerApellido: obligatorios.
-        - segundoNombre, segundoApellido: opcionales.
-        - idRol: UUID de un rol existente.
-        - password: opcional; si viene, se guarda el nuevo hash. Si se omite o
-          llega vacío, la contraseña actual se conserva.
+        - segundoNombre, segundoApellido: opcionales (pasar null o cadena vacía si no aplica).
+        - idRol: UUID del rol a asignar.
+        - password: nueva contraseña en texto plano (opcional). Si es null o vacía, la contraseña previa se conserva sin cambios.
 
-        Respuesta 200: el usuario actualizado (sin el hash de la contraseña).
-        Respuesta 404: usuario.no.encontrado.
-        Respuesta 409: usuario.duplicado (correo de otro usuario).
-        Respuesta 422: datos inválidos o usuario.rol.invalido.
+        Catálogo de Roles y sus UUIDs:
+        | Rol | UUID (idRol) |
+        | :--- | :--- |
+        | Administrador | `179acd26-b52c-4e75-8c26-0b6b1b5737e4` |
+        | Analista financiero | `bacadb8f-63d4-4032-8c43-729f597623b4` |
+        | Auditor | `36078d03-86e6-4075-a7b5-c82b3e414760` |
+        | Data Steward | `ea07d6fd-a849-4764-8b03-688163837303` |
+        | Gerente / Directivo | `c43ddacf-b545-4190-b051-c8172e3026f0` |
+        | Usuario móvil | `c6152fdb-6b06-4c89-95b9-42b6222320f1` |
+
+        Respuesta 200: Objeto `UsuarioDto` con la información actualizada (sin el hash de la contraseña).
+        Respuesta 404: `usuario.no.encontrado` si el id no existe.
+        Respuesta 409: `usuario.duplicado` si el nuevo correo ya pertenece a otro usuario.
+        Respuesta 422: Datos inválidos o `usuario.rol.invalido` si el idRol no existe en `seguridad.roles`.
         """)]
     [ProducesResponseType(typeof(UsuarioDto), StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized, "application/problem+json")]
